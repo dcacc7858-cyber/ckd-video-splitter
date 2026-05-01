@@ -12,7 +12,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Install Gradle and Build
+      - name: Build APK
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
           unzip -q gradle-8.4-bin.zip
