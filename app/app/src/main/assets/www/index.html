@@ -1,0 +1,2961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 Video Splitter — CartoonKiDuniya</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#05020f;--card:#0d0820;--border:#3d1f7a;--glow:#7c3aed;--glow2:#a855f7;--text:#e2d9f3;--muted:#7c6fa0;--success:#34d399;--danger:#f87171;--warn:#fbbf24}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(124,58,237,.15) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(168,85,247,.10) 0%,transparent 60%);pointer-events:none;z-index:0}
+  .wrapper{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:24px 16px 60px}
+  .header{text-align:center;margin-bottom:28px}
+  .logo{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;background:linear-gradient(135deg,#a855f7,#e879f9,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px rgba(168,85,247,.5));letter-spacing:2px}
+  .sub{color:var(--muted);font-size:11px;margin-top:6px;letter-spacing:2px;text-transform:uppercase}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 18px;margin-bottom:14px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--glow2),transparent)}
+  .card-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--glow2);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+
+  /* FFmpeg Box */
+  .ffbox{border-radius:14px;padding:16px 18px;margin-bottom:14px;text-align:center;border:1px solid rgba(124,58,237,.35);background:rgba(124,58,237,.09)}
+  .ffbox.ok{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.07)}
+  .ffbox.err{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.07)}
+  .ff-ico{font-size:28px;margin-bottom:6px}
+  .ff-ttl{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:5px}
+  .ff-msg{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px}
+  .ff-bg{background:rgba(255,255,255,.06);border-radius:999px;height:7px;overflow:hidden}
+  .ff-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#e879f9);border-radius:999px;width:0%;transition:width .5s ease}
+  .ff-fill.done{background:linear-gradient(90deg,#059669,#34d399)}
+  .btn-retry{margin-top:10px;padding:7px 18px;background:transparent;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:none}
+  .btn-retry.show{display:inline-block}
+
+  /* Upload */
+  .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 16px;text-align:center;cursor:pointer;transition:all .3s;position:relative}
+  .upload-zone:hover,.upload-zone.drag-over{border-color:var(--glow2);background:rgba(124,58,237,.08)}
+  .upload-zone.disabled{opacity:.35;pointer-events:none}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .upload-icon{font-size:36px;margin-bottom:7px}
+  .upload-text{font-size:15px;font-weight:600;margin-bottom:3px}
+  .upload-sub{font-size:12px;color:var(--muted)}
+  .file-info{display:none;background:rgba(124,58,237,.1);border:1px solid var(--glow);border-radius:10px;padding:11px;margin-top:10px}
+  .file-info.show{display:flex;align-items:center;gap:10px}
+  .file-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+  .file-meta{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* Ratio Selector */
+  .ratio-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px}
+  .ratio-btn{background:rgba(255,255,255,.04);border:2px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .2s}
+  .ratio-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.15)}
+  .ratio-icon{font-size:22px;margin-bottom:4px}
+  .ratio-label{font-family:'Orbitron',monospace;font-size:10px;color:var(--glow2);font-weight:700}
+  .ratio-name{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* Background Selector */
+  .bg-tabs{display:flex;gap:8px;margin-bottom:14px}
+  .bg-tab{flex:1;padding:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s}
+  .bg-tab.active{border-color:var(--glow2);background:rgba(124,58,237,.15);color:var(--glow2)}
+  .bg-panel{display:none}
+  .bg-panel.show{display:block}
+
+  /* Color picker */
+  .color-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .color-label{font-size:12px;color:var(--muted);min-width:60px}
+  .color-picker{width:44px;height:36px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:none;padding:2px}
+  .preset-colors{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .preset-dot{width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
+  .preset-dot.active{border-color:white;transform:scale(1.15)}
+  .preset-dot:hover{transform:scale(1.1)}
+
+  /* Gradient */
+  .gradient-preview{height:48px;border-radius:10px;margin:10px 0;border:1px solid var(--border);transition:background .3s}
+  .gradient-dir{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .dir-btn{padding:5px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;transition:all .2s}
+  .dir-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.15);color:var(--glow2)}
+
+  /* Image BG */
+  .img-upload-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;position:relative;transition:all .3s}
+  .img-upload-zone:hover{border-color:var(--glow2);background:rgba(124,58,237,.06)}
+  .img-upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .img-preview{width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:8px;display:none}
+  .img-preview.show{display:block}
+
+  /* Preview Canvas */
+  .preview-wrap{margin-top:14px;text-align:center}
+  .preview-canvas{border-radius:10px;border:1px solid var(--border);max-width:160px;max-height:200px}
+  .preview-label{font-size:11px;color:var(--muted);margin-top:6px}
+
+  /* Duration & Parts */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .input-group{display:flex;flex-direction:column;gap:6px}
+  .input-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .input-field{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;width:100%;outline:none;transition:border-color .3s}
+  .input-field:focus{border-color:var(--glow2);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+  .parts-manager{display:none;margin-top:16px}
+  .parts-manager.show{display:block}
+  .pm-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+  .pm-count-wrap{display:flex;align-items:center;gap:8px}
+  .pm-count{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;background:linear-gradient(135deg,#a855f7,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .pm-label{font-size:12px;color:var(--muted)}
+  .pm-skipped{font-size:11px;color:var(--danger);font-weight:600;margin-top:2px;display:none}
+  .pm-help{font-size:11px;color:var(--muted);text-align:right;line-height:1.6}
+  .pm-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .p-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.4);border-radius:7px;padding:4px 6px 4px 9px;font-size:10px;color:var(--glow2);font-family:'Orbitron',monospace;transition:all .2s}
+  .p-chip.off{background:rgba(248,113,113,.06);border-color:rgba(248,113,113,.25);color:rgba(248,113,113,.4);text-decoration:line-through;opacity:.55}
+  .p-x{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:9px;font-weight:700;flex-shrink:0;background:rgba(248,113,113,.18);border:1px solid rgba(248,113,113,.5);color:var(--danger);transition:all .2s}
+  .p-chip.off .p-x{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.5);color:var(--success)}
+
+  /* Split Button */
+  .btn-split{width:100%;padding:15px;background:linear-gradient(135deg,#7c3aed,#a855f7,#c026d3);border:none;border-radius:12px;color:white;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .3s;margin-top:6px}
+  .btn-split:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 25px rgba(124,58,237,.4)}
+  .btn-split:disabled{opacity:.35;cursor:not-allowed;transform:none}
+
+  /* Processing */
+  .proc-wrap{display:none}.proc-wrap.show{display:block}
+  .overall-bar-bg{background:rgba(255,255,255,.06);border-radius:999px;height:9px;overflow:hidden;margin-bottom:6px}
+  .overall-bar-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#e879f9);border-radius:999px;width:0%;transition:width .4s ease;box-shadow:0 0 10px rgba(168,85,247,.6)}
+  .overall-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:14px}
+  .overall-meta span:last-child{font-family:'Orbitron',monospace;color:var(--glow2)}
+  .proc-list{display:flex;flex-direction:column;gap:6px}
+  .proc-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 12px;transition:all .3s}
+  .proc-row.active{border-color:var(--glow2);background:rgba(124,58,237,.1);box-shadow:0 0 12px rgba(124,58,237,.15)}
+  .proc-row.done{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.04)}
+  .proc-row.skp{opacity:.3;border-style:dashed}
+  .proc-icn{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+  .spinner{width:16px;height:16px;border:2px solid rgba(168,85,247,.25);border-top-color:var(--glow2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .proc-info{flex:1}
+  .proc-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700}
+  .proc-time{font-size:10px;color:var(--muted);margin-top:2px}
+  .mini-bar-bg{width:50px;height:4px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;flex-shrink:0}
+  .mini-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#7c3aed,#e879f9);border-radius:999px;transition:width .3s}
+  .proc-row.done .mini-bar-fill{width:100%!important;background:var(--success)}
+  .proc-row.active .mini-bar-fill{animation:ind 1.5s ease infinite}
+  @keyframes ind{0%{width:15%;margin-left:0}50%{width:55%;margin-left:20%}100%{width:15%;margin-left:80%}}
+  .proc-stat{font-size:10px;font-weight:600;flex-shrink:0;min-width:56px;text-align:right}
+  .proc-stat.wait{color:var(--muted)}.proc-stat.run{color:var(--glow2)}.proc-stat.ok{color:var(--success)}.proc-stat.skip{color:var(--danger);font-style:italic}
+
+  /* Downloads */
+  .dl-wrap{display:none}.dl-wrap.show{display:block}
+  .dl-row{display:flex;align-items:center;justify-content:space-between;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:11px 13px;margin-bottom:8px;animation:sli .3s ease}
+  @keyframes sli{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  .dl-left{display:flex;align-items:center;gap:9px}
+  .dl-name{font-weight:600;font-size:12px;word-break:break-all}
+  .dl-sz{font-size:11px;color:var(--muted);margin-top:2px}
+  .btn-dl{background:linear-gradient(135deg,#059669,#34d399);border:none;border-radius:8px;color:white;padding:7px 13px;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .btn-all{width:100%;padding:12px;background:transparent;border:2px solid var(--success);border-radius:10px;color:var(--success);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .3s;margin-top:9px}
+  .btn-all:hover{background:rgba(52,211,153,.1)}
+  .btn-reset{width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .3s;margin-top:7px}
+  .btn-reset:hover{border-color:var(--glow2);color:var(--glow2)}
+  .err-box{display:none;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);border-radius:10px;padding:11px;margin-top:9px;font-size:12px;color:var(--danger);line-height:1.6}
+  .err-box.show{display:block}
+  @media(max-width:480px){.settings-grid{grid-template-columns:1fr}.logo{font-size:18px}.mini-bar-bg{display:none}}
+
+  /* ── Custom Time Range ── */
+  .ctr-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px}
+  .ctr-toggle input{width:16px;height:16px;accent-color:var(--glow2);cursor:pointer}
+  .ctr-toggle-label{font-size:13px;font-weight:600}
+  .ctr-box{display:none;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.3);border-radius:12px;padding:14px;margin-bottom:14px}
+  .ctr-box.show{display:block}
+  .ctr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+  .ctr-time-input{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;width:100%;outline:none;transition:border-color .3s;letter-spacing:1px}
+  .ctr-time-input:focus{border-color:var(--glow2);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+  .ctr-info{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:10px 12px;font-size:11px;color:var(--muted);line-height:1.9;margin-top:8px}
+  .ctr-info .ctr-hi{color:var(--glow2);font-weight:700;font-family:'Orbitron',monospace}
+  .ctr-info .ctr-warn{color:var(--warn)}
+  .ctr-info .ctr-ok{color:var(--success)}
+
+  /* ── Watermark Section ── */
+  .wm-preview-wrap{display:flex;gap:14px;align-items:flex-start;margin-top:14px;flex-wrap:wrap}
+  .wm-canvas-box{flex-shrink:0;text-align:center}
+  .wm-canvas{border-radius:10px;border:1px solid var(--border);display:block}
+  .wm-canvas-label{font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:1px}
+  .wm-settings{flex:1;min-width:200px;display:flex;flex-direction:column;gap:10px}
+  .wm-row{display:flex;flex-direction:column;gap:5px}
+  .wm-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .wm-input{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;width:100%;outline:none;transition:border-color .3s}
+  .wm-input:focus{border-color:var(--glow2);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+  .wm-font-grid{display:flex;flex-wrap:wrap;gap:6px}
+  .wm-font-btn{padding:5px 11px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;color:var(--text);transition:all .2s;white-space:nowrap}
+  .wm-font-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.2);color:var(--glow2)}
+  .wm-pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .wm-pos-btn{padding:7px 8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;font-size:11px;cursor:pointer;color:var(--text);transition:all .2s;text-align:center}
+  .wm-pos-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.2);color:var(--glow2)}
+  .wm-size-row{display:flex;align-items:center;gap:8px}
+  .wm-size-row input[type=range]{flex:1;accent-color:var(--glow2)}
+  .wm-size-val{font-size:11px;color:var(--glow2);font-family:'Orbitron',monospace;min-width:30px;text-align:right}
+  .wm-toggle{display:flex;align-items:center;gap:8px;cursor:pointer}
+  .wm-toggle input{width:16px;height:16px;accent-color:var(--glow2);cursor:pointer}
+  .wm-toggle-label{font-size:13px;font-weight:600}
+  .wm-color-row{display:flex;align-items:center;gap:8px}
+  .wm-color-pick{width:36px;height:30px;border:2px solid var(--border);border-radius:7px;cursor:pointer;background:none;padding:2px}
+  .wm-part-display{display:flex;align-items:center;gap:8px}
+  .wm-part-prefix{font-size:13px;font-weight:600;color:var(--muted)}
+  .wm-part-num{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--glow2);font-family:'Orbitron',monospace;font-size:16px;font-weight:700;width:70px;outline:none;text-align:center}
+  .wm-part-num:focus{border-color:var(--glow2)}
+  .wm-opacity-row{display:flex;align-items:center;gap:8px}
+  .wm-opacity-row input[type=range]{flex:1;accent-color:var(--glow2)}
+
+  /* ── Logo Overlay ── */
+  .logo-upload-zone{border:2px dashed var(--border);border-radius:10px;padding:18px;text-align:center;cursor:pointer;position:relative;transition:all .3s}
+  .logo-upload-zone:hover{border-color:var(--glow2);background:rgba(124,58,237,.06)}
+  .logo-upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .logo-pos-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+  .logo-pos-btn{padding:8px 4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;text-align:center;transition:all .2s}
+  .logo-pos-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.2)}
+  .logo-shape-row{display:flex;gap:8px;margin-top:8px}
+  .logo-shape-btn{flex:1;padding:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;text-align:center;transition:all .2s}
+  .logo-shape-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.2);color:var(--glow2)}
+
+  /* Username style buttons */
+  .wm-style-btn{padding:6px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer;color:var(--muted);transition:all .2s}
+  .wm-style-btn.active{border-color:var(--glow2);background:rgba(124,58,237,.2);color:var(--glow2);font-weight:700}
+  .un-color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
+  .un-color-dot.active{border-color:#fff;transform:scale(1.2)}
+
+  /* ── Animation Toggle Tabs ── */
+  .anim-toggle-row{display:flex;gap:8px;margin-bottom:10px}
+  .anim-tab{flex:1;padding:7px 5px;background:rgba(255,255,255,.04);border:1px solid var(--border);
+    border-radius:9px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;
+    transition:all .2s;color:var(--muted)}
+  .anim-tab.active{border-color:var(--glow2);background:rgba(124,58,237,.18);color:var(--glow2)}
+
+  /* ── Batman Animation ── */
+  .batman-scene{
+    width:100%;height:200px;border-radius:12px;overflow:hidden;
+    position:relative;margin:0 0 8px;
+    background:linear-gradient(180deg,#060210 0%,#130820 40%,#1a0f05 100%);
+    border:1px solid rgba(255,200,0,.2);display:none;
+  }
+  .batman-scene.show{display:block}
+  .batman-scene canvas{width:100%;height:100%;display:block}
+  .bat-status{
+    text-align:center;padding:5px 0 3px;
+    font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;
+    color:#ffd700;text-shadow:0 0 10px rgba(255,215,0,.8);
+    animation:batpulse 1.4s ease infinite;display:none;
+  }
+  .bat-status.show{display:block}
+  @keyframes batpulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* ── Hacker Terminal ── */
+  .term-stage{
+    width:100%;height:210px;background:#000;border-radius:10px;
+    border:1px solid #1a4a1a;position:relative;overflow:hidden;
+    font-family:'Courier New','Consolas',monospace;
+    box-shadow:0 0 24px rgba(0,255,0,.12),inset 0 0 40px rgba(0,255,0,.04);
+    display:none;margin:0 0 8px;
+  }
+  .term-stage.show{display:block}
+  .term-header{
+    background:linear-gradient(180deg,#1a1a1a,#0a0a0a);
+    border-bottom:1px solid #1a4a1a;padding:5px 10px;
+    display:flex;align-items:center;gap:6px;font-size:10px;color:#666;
+  }
+  .term-dot{width:9px;height:9px;border-radius:50%}
+  .dot-r{background:#ff5f56}.dot-y{background:#ffbd2e}.dot-g{background:#27c93f}
+  .term-title{margin-left:8px;font-family:'Courier New',monospace;color:#10b981;font-size:10px}
+  .term-body{padding:8px 11px;font-size:10px;line-height:1.5;color:#10b981;height:calc(100% - 26px);overflow:hidden;position:relative;}
+  .term-line{white-space:pre;margin-bottom:1px;text-shadow:0 0 4px rgba(16,185,129,.4)}
+  .term-prompt{color:#a855f7;font-weight:bold}
+  .term-cmd{color:#10b981}
+  .term-out{color:#94a3b8}
+  .term-ok{color:#10b981;font-weight:bold}
+  .term-warn{color:#fbbf24}
+  .term-err{color:#ef4444}
+  .term-info{color:#06b6d4}
+  .term-hl{color:#fbbf24;font-weight:bold}
+  .term-path{color:#a855f7}
+  .hk-cursor{display:inline-block;width:7px;height:12px;background:#10b981;vertical-align:middle;margin-left:2px;animation:blink 1s steps(2) infinite;box-shadow:0 0 5px #10b981;}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .term-stage::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.22) 50%);background-size:100% 3px;pointer-events:none;z-index:10;}
+  .term-stage::after{content:'';position:absolute;inset:0;background:rgba(16,185,129,.018);pointer-events:none;animation:flicker .15s infinite;z-index:9;}
+  @keyframes flicker{0%,100%{opacity:1}50%{opacity:.96}}
+  .term-status{
+    text-align:center;padding:5px 0 3px;
+    font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;
+    color:#10b981;text-shadow:0 0 8px rgba(16,185,129,.8);
+    animation:termpulse 1.2s ease infinite;display:none;
+  }
+  .term-status.show{display:block}
+  @keyframes termpulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <div class="logo">🎬 VIDEO SPLITTER</div>
+    <div class="sub">CartoonKiDuniya • Background + Ratio + Real MP4</div>
+  </div>
+
+  <!-- FFmpeg Status -->
+  <div class="ffbox" id="ffbox">
+    <div class="ff-ico" id="ffIco">⏳</div>
+    <div class="ff-ttl" id="ffTtl">FFmpeg Load Ho Raha Hai...</div>
+    <div class="ff-msg" id="ffMsg">Pehli baar ~25MB download hoga</div>
+    <div class="ff-bg"><div class="ff-fill" id="ffFill"></div></div>
+    <button class="btn-retry" id="retryBtn" onclick="startLoad()">🔄 Dobara Try Karo</button>
+  </div>
+
+  <!-- Step 1: Video Upload -->
+  <div class="card">
+    <div class="card-title">📁 Step 1 — Video Upload Karo</div>
+    <div class="upload-zone disabled" id="uploadZone">
+      <input type="file" id="vidInput" accept="video/*" disabled>
+      <div class="upload-icon">🎥</div>
+      <div class="upload-text">Video yahan tap karo</div>
+      <div class="upload-sub">MP4 • WebM • MKV — koi bhi format</div>
+    </div>
+    <div class="file-info" id="fileInfo">
+      <div style="font-size:26px">🎬</div>
+      <div style="min-width:0">
+        <div class="file-name" id="fname">—</div>
+        <div class="file-meta" id="fmeta">—</div>
+      </div>
+    </div>
+    <div class="err-box" id="errBox"></div>
+  </div>
+
+  <!-- Step 2: Ratio -->
+  <div class="card">
+    <div class="card-title">📐 Step 2 — Output Ratio Chuno</div>
+    <div class="ratio-grid">
+      <div class="ratio-btn active" onclick="setRatio('9:16',this)">
+        <div class="ratio-icon">📱</div>
+        <div class="ratio-label">9:16</div>
+        <div class="ratio-name">Reels/Stories</div>
+      </div>
+      <div class="ratio-btn" onclick="setRatio('1:1',this)">
+        <div class="ratio-icon">⬜</div>
+        <div class="ratio-label">1:1</div>
+        <div class="ratio-name">Square Post</div>
+      </div>
+      <div class="ratio-btn" onclick="setRatio('4:5',this)">
+        <div class="ratio-icon">🖼️</div>
+        <div class="ratio-label">4:5</div>
+        <div class="ratio-name">Portrait Post</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Background -->
+  <div class="card">
+    <div class="card-title">🎨 Step 3 — Background Chuno</div>
+
+    <div class="bg-tabs">
+      <div class="bg-tab active" onclick="setBgTab('solid',this)">🎨 Color</div>
+      <div class="bg-tab" onclick="setBgTab('gradient',this)">🌈 Gradient</div>
+      <div class="bg-tab" onclick="setBgTab('image',this)">🖼️ Image</div>
+    </div>
+
+    <!-- Solid Color Panel -->
+    <div class="bg-panel show" id="panel-solid">
+      <div class="color-row">
+        <span class="color-label">Color:</span>
+        <input type="color" class="color-picker" id="solidColor" value="#000000" oninput="updatePreview()">
+        <span style="font-size:13px;color:var(--muted)" id="solidHex">#000000</span>
+      </div>
+      <div class="preset-colors" id="solidPresets"></div>
+    </div>
+
+    <!-- Gradient Panel -->
+    <div class="bg-panel" id="panel-gradient">
+      <div class="color-row">
+        <span class="color-label">Color 1:</span>
+        <input type="color" class="color-picker" id="grad1" value="#7c3aed" oninput="updatePreview()">
+      </div>
+      <div class="color-row">
+        <span class="color-label">Color 2:</span>
+        <input type="color" class="color-picker" id="grad2" value="#e879f9" oninput="updatePreview()">
+      </div>
+      <div class="gradient-preview" id="gradPreview"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Direction:</div>
+      <div class="gradient-dir" id="gradDirs"></div>
+    </div>
+
+    <!-- Image Panel -->
+    <div class="bg-panel" id="panel-image">
+      <div class="img-upload-zone" id="imgUploadZone">
+        <input type="file" id="bgImgInput" accept="image/*" onchange="loadBgImage(this)">
+        <div style="font-size:28px" id="imgUploadIcon">🖼️</div>
+        <div style="font-size:13px;font-weight:600;margin-top:6px" id="imgUploadText">Background Image Upload Karo</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">JPG • PNG • WebP</div>
+      </div>
+      <img id="bgImgPreview" style="display:none" alt="bg">
+
+      <!-- Layout Editor -->
+      <div id="layoutEditor" style="display:none;margin-top:14px">
+        <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--glow2);letter-spacing:2px;margin-bottom:12px">🎨 LAYOUT EDITOR — APNE HISAB SE SET KARO</div>
+        <div style="position:relative;margin-bottom:14px">
+          <canvas id="layoutCanvas" style="width:100%;border-radius:12px;border:2px solid var(--border);display:block;touch-action:none;cursor:grab"></canvas>
+          <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:5px">👆 Image drag karke upar-neeche karo • Seedha set karo</div>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="font-size:11px;color:var(--glow2);font-weight:700;margin-bottom:10px">⬛ Black Bars — Text ke liye jagah</div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+              <span>🔝 Top Black Bar</span>
+              <span style="color:var(--glow2);font-family:'Orbitron',monospace" id="topBarVal">20%</span>
+            </div>
+            <input type="range" id="topBarSlider" min="0" max="40" value="20" style="width:100%;accent-color:var(--glow2)" oninput="updateLayoutEditor()">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+              <span>⬇️ Bottom Black Bar</span>
+              <span style="color:var(--glow2);font-family:'Orbitron',monospace" id="botBarVal">25%</span>
+            </div>
+            <input type="range" id="botBarSlider" min="0" max="50" value="25" style="width:100%;accent-color:var(--glow2)" oninput="updateLayoutEditor()">
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+            <span>🔍 Image Zoom</span>
+            <span style="color:var(--glow2);font-family:'Orbitron',monospace" id="imgZoomVal">100%</span>
+          </div>
+          <input type="range" id="imgZoomSlider" min="50" max="200" value="100" style="width:100%;accent-color:var(--glow2)" oninput="updateLayoutEditor()">
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">⚡ Quick Presets:</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">
+          <button onclick="applyLayoutPreset(20,25)" style="padding:6px 10px;background:rgba(124,58,237,.2);border:1px solid var(--glow2);border-radius:7px;color:var(--glow2);font-size:11px;cursor:pointer">🎬 Logo+Scene</button>
+          <button onclick="applyLayoutPreset(0,35)" style="padding:6px 10px;background:rgba(124,58,237,.2);border:1px solid var(--glow2);border-radius:7px;color:var(--glow2);font-size:11px;cursor:pointer">⬇️ Bottom Only</button>
+          <button onclick="applyLayoutPreset(15,40)" style="padding:6px 10px;background:rgba(124,58,237,.2);border:1px solid var(--glow2);border-radius:7px;color:var(--glow2);font-size:11px;cursor:pointer">📱 Reference</button>
+          <button onclick="applyLayoutPreset(0,0)" style="padding:6px 10px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;cursor:pointer">↺ Reset</button>
+        </div>
+        <div style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:10px;font-size:11px;color:var(--muted);line-height:1.7">
+          ✅ <strong style="color:var(--success)">Kaise use karo:</strong> Sliders se black bars set karo → Image drag karo sahi jagah → Preview mein dekho → Split karo!
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Preview -->
+    <div class="preview-wrap">
+      <canvas id="previewCanvas" class="preview-canvas" width="90" height="160"></canvas>
+      <div class="preview-label">Preview (9:16)</div>
+    </div>
+  </div>
+
+  <!-- Step 4: Duration -->
+  <div class="card">
+    <div class="card-title">⚙️ Step 4 — Duration Set Karo</div>
+
+    <!-- Custom Time Range Toggle -->
+    <label class="ctr-toggle">
+      <input type="checkbox" id="ctrEnabled" onchange="toggleCtr()">
+      <span class="ctr-toggle-label">🎯 Custom Start/End Time — Video ka sirf ek hissa split karo</span>
+    </label>
+
+    <div class="ctr-box" id="ctrBox">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.7">
+        ⏱️ Format: <span style="color:var(--glow2);font-family:'Orbitron',monospace">MM:SS</span> ya <span style="color:var(--glow2);font-family:'Orbitron',monospace">HH:MM:SS</span> — Jahan se start karna hai aur jahan tak karna hai voh do.
+      </div>
+      <div class="ctr-grid">
+        <div class="input-group">
+          <div class="input-label">▶ Start Time</div>
+          <input type="text" class="ctr-time-input" id="ctrStart" placeholder="0:00" oninput="buildParts()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">⏹ End Time</div>
+          <input type="text" class="ctr-time-input" id="ctrEnd" placeholder="8:35" oninput="buildParts()">
+        </div>
+      </div>
+      <div class="ctr-info" id="ctrInfo" style="display:none"></div>
+    </div>
+
+    <div class="settings-grid">
+      <div class="input-group">
+        <div class="input-label">Minutes per Part</div>
+        <input type="number" class="input-field" id="pMin" value="2" min="0" max="999">
+      </div>
+      <div class="input-group">
+        <div class="input-label">Seconds per Part</div>
+        <input type="number" class="input-field" id="pSec" value="0" min="0" max="59">
+      </div>
+    </div>
+    <div class="parts-manager" id="pm">
+      <div class="pm-header">
+        <div class="pm-count-wrap">
+          <div class="pm-count" id="pmCount">0</div>
+          <div class="pm-labels">
+            <div class="pm-label">Parts banenge</div>
+            <div class="pm-skipped" id="pmSkipped"></div>
+          </div>
+        </div>
+        <div class="pm-help">✕ = Skip<br><span style="color:var(--success)">✓ = Wapas</span></div>
+      </div>
+      <div class="pm-grid" id="pmGrid"></div>
+    </div>
+  </div>
+
+  <!-- Step 5: Watermark -->
+  <div class="card">
+    <div class="card-title">🔖 Step 5 — Watermark Set Karo</div>
+
+    <div class="wm-toggle" style="margin-bottom:14px">
+      <input type="checkbox" id="wmEnabled" checked onchange="updateWmPreview()">
+      <span class="wm-toggle-label">Watermark Enable Karo</span>
+    </div>
+
+    <div id="wmControls">
+
+      <!-- PART NUMBER -->
+      <div class="wm-row">
+        <div class="wm-label">Part Number <span style="color:var(--glow2)">(Starting Number)</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-family:'Orbitron',monospace;font-size:13px;color:var(--muted);font-weight:700">PART</span>
+          <input type="number" class="wm-part-num" id="wmPartNum" value="1" min="1" max="999" oninput="updateWmPreview()">
+          <div style="font-size:11px;color:var(--muted);line-height:1.5">← Yahan se shuru hoga<br><span style="color:var(--glow2)">E.g. 12→1 banana ho to 1 likho</span></div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE POSITION CANVAS -->
+      <div class="wm-row">
+        <div class="wm-label">📍 Position Control — Drag karke kaheen bhi rakho</div>
+        <div style="background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:10px;padding:10px">
+          <div style="position:relative;display:inline-block;width:100%">
+            <canvas id="wmDragCanvas" style="width:100%;border-radius:8px;border:2px solid rgba(124,58,237,.4);display:block;touch-action:none;cursor:default" width="90" height="160"></canvas>
+            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:5px">👆 PART / Episode / Username — alag alag drag karo</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px"><span style="width:10px;height:10px;background:#facc15;border-radius:2px;display:inline-block"></span>PART</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px"><span style="width:10px;height:10px;background:#34d399;border-radius:2px;display:inline-block"></span>Episode</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px"><span style="width:10px;height:10px;background:#a855f7;border-radius:2px;display:inline-block"></span>Username</div>
+          </div>
+          <!-- Quick position presets -->
+          <div style="font-size:10px;color:var(--muted);margin-top:8px;margin-bottom:4px">⚡ Quick Reset:</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="resetWmPositions('default')" style="padding:5px 8px;background:rgba(124,58,237,.15);border:1px solid var(--glow2);border-radius:6px;color:var(--glow2);font-size:10px;cursor:pointer">↺ Default</button>
+            <button onclick="resetWmPositions('top')" style="padding:5px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;cursor:pointer">⬆️ Sab Upar</button>
+            <button onclick="resetWmPositions('bottom')" style="padding:5px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;cursor:pointer">⬇️ Sab Neeche</button>
+            <button onclick="resetWmPositions('corners')" style="padding:5px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;cursor:pointer">📐 Corners</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Episode Name + font size -->
+      <div class="wm-row">
+        <div class="wm-label">Episode Name</div>
+        <input type="text" class="wm-input" id="wmEpisode" placeholder="e.g. Jadooi Rassi" oninput="updateWmPreview()">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <span style="font-size:10px;color:var(--muted);min-width:55px">Font Size:</span>
+          <input type="range" id="wmEpSize" min="6" max="22" value="12" oninput="updateWmPreview()" style="flex:1;accent-color:var(--glow2)">
+          <span style="font-size:11px;color:var(--glow2);font-family:'Orbitron',monospace;min-width:24px" id="wmEpSizeVal">12</span>
+        </div>
+      </div>
+
+      <!-- Username + font size + ALIGNMENT -->
+      <div class="wm-row">
+        <div class="wm-label">Username</div>
+        <input type="text" class="wm-input" id="wmUsername" placeholder="e.g. @CartoonKiDuniya" oninput="updateWmPreview()">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <span style="font-size:10px;color:var(--muted);min-width:55px">Font Size:</span>
+          <input type="range" id="wmUnSize" min="6" max="22" value="11" oninput="updateWmPreview()" style="flex:1;accent-color:var(--glow2)">
+          <span style="font-size:11px;color:var(--glow2);font-family:'Orbitron',monospace;min-width:24px" id="wmUnSizeVal">11</span>
+        </div>
+      </div>
+
+      <!-- USERNAME COLOR — Multiple options -->
+      <div class="wm-row">
+        <div class="wm-label">🎨 Username Color</div>
+        <!-- Quick color palette -->
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px" id="unColorPalette"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="color" class="wm-color-pick" id="wmUnColor" value="#a855f7" oninput="onUnColorPick()">
+          <span style="font-size:11px;color:var(--muted)">Custom color</span>
+          <span style="font-size:12px;font-family:monospace;color:var(--glow2)" id="wmUnColorHex">#a855f7</span>
+        </div>
+      </div>
+
+      <!-- USERNAME TEXT STYLE -->
+      <div class="wm-row">
+        <div class="wm-label">✨ Username Text Style</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="unStyleBtns">
+          <button class="wm-style-btn active" data-style="bold" onclick="toggleUnStyle('bold',this)"><b>B</b> Bold</button>
+          <button class="wm-style-btn" data-style="italic" onclick="toggleUnStyle('italic',this)"><i>I</i> Italic</button>
+          <button class="wm-style-btn" data-style="shadow" onclick="toggleUnStyle('shadow',this)">💫 Shadow</button>
+          <button class="wm-style-btn" data-style="outline" onclick="toggleUnStyle('outline',this)">⬜ Outline</button>
+          <button class="wm-style-btn" data-style="glow" onclick="toggleUnStyle('glow',this)">🌟 Glow</button>
+          <button class="wm-style-btn" data-style="gradient" onclick="toggleUnStyle('gradient',this)">🌈 Gradient</button>
+        </div>
+        <!-- Gradient 2nd color (shown only when gradient style active) -->
+        <div id="unGradRow" style="display:none;margin-top:8px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--muted)">Gradient 2nd color:</span>
+          <input type="color" id="wmUnColor2" value="#f59e0b" oninput="updateWmPreview()" style="width:36px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none">
+        </div>
+      </div>
+
+      <!-- Font Style -->
+      <div class="wm-row">
+        <div class="wm-label">Font Style (Sab text ke liye)</div>
+        <div class="wm-font-grid" id="wmFontGrid">
+          <div class="wm-font-btn active" data-font="Arial" onclick="setWmFont(this)">Arial Bold</div>
+          <div class="wm-font-btn" data-font="Orbitron" onclick="setWmFont(this)">Orbitron</div>
+          <div class="wm-font-btn" data-font="Rajdhani" onclick="setWmFont(this)" style="font-family:'Rajdhani'">Rajdhani</div>
+          <div class="wm-font-btn" data-font="Georgia" onclick="setWmFont(this)" style="font-family:Georgia">Georgia</div>
+        </div>
+      </div>
+
+      <!-- Colors + BG Box toggle -->
+      <div class="wm-row">
+        <div class="wm-label">Colors (Part + Episode)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="color" class="wm-color-pick" id="wmColor" value="#ffffff" oninput="updateWmPreview()">
+            <span style="font-size:12px;color:var(--muted)">Text</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="color" class="wm-color-pick" id="wmBgColor" value="#000000" oninput="updateWmPreview()">
+            <span style="font-size:12px;color:var(--muted)">BG Box</span>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px">
+            <input type="checkbox" id="wmBgBoxEnabled" checked onchange="updateWmPreview()" style="accent-color:var(--glow2)">
+            <span>BG Box On/Off</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Opacity -->
+      <div class="wm-row">
+        <div class="wm-label">Opacity</div>
+        <div class="wm-opacity-row">
+          <input type="range" id="wmOpacity" min="10" max="100" value="90" oninput="updateWmPreview()">
+          <span class="wm-size-val" id="wmOpacityVal">90%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live Preview -->
+    <div class="wm-preview-wrap" style="margin-top:16px">
+      <div class="wm-canvas-box">
+        <canvas id="wmCanvas" class="wm-canvas" width="90" height="160"></canvas>
+        <div class="wm-canvas-label">LIVE PREVIEW</div>
+      </div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:10px;font-size:11px;color:var(--muted);line-height:1.8">
+          🟡 <span style="color:#facc15;font-weight:700">PART X</span> — Drag karo jahaan chahiye<br>
+          🟢 <span style="color:#34d399">Episode</span> — Drag karo jahaan chahiye<br>
+          🟣 <span style="color:#a855f7">@Username</span> — Drag + custom color + style
+        </div>
+        <div style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:10px;font-size:11px;color:var(--muted);line-height:1.7">
+          💡 <strong style="color:var(--success)">Tip:</strong><br>
+          Drag canvas pe karo — teen dots alag-alag drag hote hain. Reset buttons se default pe wapas aao.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 6: Logo Overlay -->
+  <div class="card">
+    <div class="card-title">🖼️ Step 6 — Logo / Image Overlay (Optional)</div>
+
+    <div class="wm-toggle" style="margin-bottom:14px">
+      <input type="checkbox" id="logoEnabled" onchange="toggleLogoSection()">
+      <span class="wm-toggle-label">Logo Overlay Enable Karo</span>
+    </div>
+
+    <div id="logoControls" style="display:none">
+
+      <!-- Logo Upload -->
+      <div class="wm-row" style="margin-bottom:12px">
+        <div class="wm-label">Logo / Image Upload Karo (PNG recommended — transparent background)</div>
+        <div class="logo-upload-zone" id="logoUploadZone">
+          <input type="file" id="logoInput" accept="image/*" onchange="loadLogoImage(this)">
+          <div style="font-size:28px" id="logoUploadIcon">🖼️</div>
+          <div style="font-size:13px;font-weight:600;margin-top:6px" id="logoUploadText">Logo tap karke upload karo</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">PNG • JPG • WebP — PNG best hai transparent ke liye</div>
+        </div>
+        <!-- Logo preview -->
+        <div id="logoPreviewWrap" style="display:none;margin-top:10px;text-align:center">
+          <img id="logoPreviewImg" style="max-height:80px;max-width:160px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--success);margin-top:4px">✅ Logo ready!</div>
+        </div>
+      </div>
+
+      <!-- Shape -->
+      <div class="wm-row" style="margin-bottom:12px">
+        <div class="wm-label">Logo Shape</div>
+        <div class="logo-shape-row">
+          <div class="logo-shape-btn active" id="logoShapeCircle" onclick="setLogoShape('circle',this)">⭕ Circle</div>
+          <div class="logo-shape-btn" id="logoShapeSquare" onclick="setLogoShape('square',this)">⬜ Square</div>
+          <div class="logo-shape-btn" id="logoShapeOriginal" onclick="setLogoShape('original',this)">🖼️ Original</div>
+        </div>
+      </div>
+
+      <!-- Size -->
+      <div class="wm-row" style="margin-bottom:12px">
+        <div class="wm-label">Logo Size</div>
+        <div class="wm-size-row">
+          <input type="range" id="logoSize" min="5" max="40" value="15" oninput="updateLogoPreview()">
+          <span class="wm-size-val" id="logoSizeVal">15%</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Video width ka percentage — 15% = medium logo</div>
+      </div>
+
+      <!-- Position -->
+      <div class="wm-row" style="margin-bottom:12px">
+        <div class="wm-label">Position — Kahan lagana hai?</div>
+        <div class="logo-pos-grid">
+          <div class="logo-pos-btn active" onclick="setLogoPos('top-left',this)">↖️<br><span style="font-size:9px">Top Left</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('top-center',this)">⬆️<br><span style="font-size:9px">Top Center</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('top-right',this)">↗️<br><span style="font-size:9px">Top Right</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('mid-left',this)">◀️<br><span style="font-size:9px">Mid Left</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('center',this)">🎯<br><span style="font-size:9px">Center</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('mid-right',this)">▶️<br><span style="font-size:9px">Mid Right</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('bot-left',this)">↙️<br><span style="font-size:9px">Bot Left</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('bot-center',this)">⬇️<br><span style="font-size:9px">Bot Center</span></div>
+          <div class="logo-pos-btn" onclick="setLogoPos('bot-right',this)">↘️<br><span style="font-size:9px">Bot Right</span></div>
+        </div>
+      </div>
+
+      <!-- Margin from edge -->
+      <div class="wm-row" style="margin-bottom:12px">
+        <div class="wm-label">Edge se Kitna Door (Margin)</div>
+        <div class="wm-size-row">
+          <input type="range" id="logoMargin" min="0" max="10" value="3" oninput="updateLogoPreview()">
+          <span class="wm-size-val" id="logoMarginVal">3%</span>
+        </div>
+      </div>
+
+      <!-- Opacity -->
+      <div class="wm-row" style="margin-bottom:12px">
+        <div class="wm-label">Opacity (Transparency)</div>
+        <div class="wm-opacity-row">
+          <input type="range" id="logoOpacity" min="10" max="100" value="90" oninput="updateLogoPreview()">
+          <span class="wm-size-val" id="logoOpacityVal">90%</span>
+        </div>
+      </div>
+
+      <!-- White circle bg toggle (like RewindToonia style) -->
+      <div class="wm-row" style="margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:8px">
+          <input type="checkbox" id="logoBgCircle" onchange="updateLogoPreview()" style="accent-color:var(--glow2);width:16px;height:16px">
+          <div>
+            <div style="font-size:13px;font-weight:600">⚪ White Circle Background</div>
+            <div style="font-size:11px;color:var(--muted)">RewindToonia style — logo ke peeche white circle</div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Live Preview -->
+      <div style="background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--glow2);letter-spacing:1px;margin-bottom:10px">LIVE PREVIEW</div>
+        <canvas id="logoCanvas" style="border-radius:8px;border:1px solid var(--border);max-width:100px" width="90" height="160"></canvas>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Logo position yahan dikhega</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="bgProcessStatus" style="display:none;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;margin-bottom:8px;text-align:center"></div>
+  <button class="btn-split" id="splitBtn" disabled>✂️ SPLIT KARO — Background + Watermark + Real MP4</button>
+
+  <div class="card proc-wrap" id="procWrap">
+    <div class="card-title">⚡ Processing — <span id="procTitle">Shuru ho raha hai...</span></div>
+    <div class="overall-bar-bg"><div class="overall-bar-fill" id="oBar"></div></div>
+    <div class="overall-meta"><span id="oLabel">Preparing...</span><span id="oPct">0%</span></div>
+
+    <!-- Animation Toggle -->
+    <!-- Animation: Batman Only -->
+    <div class="anim-toggle-row" style="display:none">
+      <div class="anim-tab active" id="tabBat" onclick="switchAnim('bat',this)">🦇 Batman</div>
+      <div class="anim-tab" id="tabHack" onclick="switchAnim('hack',this)">💻 Hacker</div>
+    </div>
+
+    <!-- 🦇 Batman Scene -->
+    <div class="batman-scene" id="batmanScene">
+      <canvas id="batCanvas"></canvas>
+    </div>
+    <div class="bat-status" id="batStatus">🦇 GOTHAM CITY — PROCESSING...</div>
+
+    <!-- 💻 Hacker Terminal -->
+    <div class="term-stage" id="termStage">
+      <div class="term-header">
+        <span class="term-dot dot-r"></span>
+        <span class="term-dot dot-y"></span>
+        <span class="term-dot dot-g"></span>
+        <span class="term-title">root@cartoonkiduniya:~/video-splitter#</span>
+      </div>
+      <div class="term-body" id="termBody"></div>
+    </div>
+    <div class="term-status" id="termStatus">💻 ENCODING... PLEASE WAIT</div>
+
+    <div class="proc-list" id="procList"></div>
+  </div>
+
+  <div class="card dl-wrap" id="dlWrap">
+    <div class="card-title">✅ Download Karo — Real MP4</div>
+    <div id="dlList"></div>
+    <button class="btn-all" id="dlAll">⬇️ SAARE PARTS DOWNLOAD KARO</button>
+    <button class="btn-reset" id="resetBtn">🔄 Naya Video Split Karo</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+<script>
+// ── State ─────────────────────────────────────────────────────────
+let vidFile=null,vidDur=0,parts=[],blobs=[];
+let ff=null,ffReady=false;
+let currentRatio='9:16';
+let bgType='solid';
+let bgImageData=null;
+let gradDir='to bottom';
+
+// ── Watermark State ───────────────────────────────────────────────
+let wmFont='Arial';
+let unStyles=new Set(['bold']); // active username text styles
+let wmUnColor='#a855f7';
+
+// Drag positions (normalized 0-1 relative to canvas)
+// Each element: {x, y} where x=0 is left, x=1 is right, y=0 is top, y=1 is bottom
+let wmPositions={
+  part:  {x:0.5, y:0.28},   // PART — just above video
+  ep:    {x:0.5, y:0.73},   // Episode — just below video
+  un:    {x:0.5, y:0.80},   // Username — below episode
+};
+let wmDragActive=null; // which element is being dragged
+
+// ── Logo Overlay State ────────────────────────────────────────────
+let logoImageData=null;   // base64 data URL of uploaded logo
+let logoPos='top-left';
+let logoShape='circle';
+
+// ── DOM ───────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const uploadZone=$('uploadZone'),vidInput=$('vidInput');
+const fileInfo=$('fileInfo'),fname=$('fname'),fmeta=$('fmeta');
+const pMin=$('pMin'),pSec=$('pSec');
+const pm=$('pm'),pmCount=$('pmCount'),pmSkipped=$('pmSkipped'),pmGrid=$('pmGrid');
+const splitBtn=$('splitBtn');
+const procWrap=$('procWrap'),procTitle=$('procTitle');
+const oBar=$('oBar'),oLabel=$('oLabel'),oPct=$('oPct'),procList=$('procList');
+const dlWrap=$('dlWrap'),dlList=$('dlList'),dlAll=$('dlAll'),resetBtn=$('resetBtn');
+const errBox=$('errBox');
+const ffbox=$('ffbox'),ffIco=$('ffIco'),ffTtl=$('ffTtl'),ffMsg=$('ffMsg'),ffFill=$('ffFill'),retryBtn=$('retryBtn');
+const previewCanvas=$('previewCanvas');
+const pctx=previewCanvas.getContext('2d');
+
+// ── Helpers ───────────────────────────────────────────────────────
+const p2=n=>String(n).padStart(2,'0');
+const ft=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=Math.floor(s%60);return h?`${h}:${p2(m)}:${p2(ss)}`:`${m}:${p2(ss)}`};
+const fhms=s=>`${p2(Math.floor(s/3600))}:${p2(Math.floor((s%3600)/60))}:${p2(Math.floor(s%60))}`;
+const showErr=msg=>{errBox.textContent='❌ '+msg;errBox.classList.add('show')};
+
+// ── Preset Colors ─────────────────────────────────────────────────
+const presets=['#000000','#ffffff','#1a1a2e','#16213e','#0f3460','#e94560','#533483','#2d6a4f','#1b4332','#f4a261','#e76f51','#264653','#2a9d8f','#e9c46a','#f72585','#7209b7','#3a0ca3','#4361ee','#4cc9f0','#06d6a0'];
+
+function buildPresets(){
+  const container=$('solidPresets');
+  presets.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='preset-dot'+(c===$('solidColor').value?' active':'');
+    d.style.background=c;
+    d.title=c;
+    d.onclick=()=>{
+      $('solidColor').value=c;
+      $('solidHex').textContent=c;
+      document.querySelectorAll('.preset-dot').forEach(x=>x.classList.remove('active'));
+      d.classList.add('active');
+      updatePreview();
+    };
+    container.appendChild(d);
+  });
+}
+
+// ── Gradient Directions ───────────────────────────────────────────
+const gradDirs=[
+  {label:'↓ Top→Bottom',val:'to bottom'},
+  {label:'→ Left→Right',val:'to right'},
+  {label:'↘ Diagonal',val:'to bottom right'},
+  {label:'↙ Diagonal',val:'to bottom left'},
+];
+
+function buildGradDirs(){
+  const container=$('gradDirs');
+  gradDirs.forEach(d=>{
+    const btn=document.createElement('div');
+    btn.className='dir-btn'+(d.val===gradDir?' active':'');
+    btn.textContent=d.label;
+    btn.onclick=()=>{
+      gradDir=d.val;
+      document.querySelectorAll('.dir-btn').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    };
+    container.appendChild(btn);
+  });
+}
+
+// ── Preview ───────────────────────────────────────────────────────
+function getRatioDims(ratio){
+  if(ratio==='9:16')return{w:90,h:160};
+  if(ratio==='1:1')return{w:120,h:120};
+  if(ratio==='4:5')return{w:96,h:120};
+  return{w:90,h:160};
+}
+
+function updatePreview(){
+  const {w,h}=getRatioDims(currentRatio);
+  previewCanvas.width=w;previewCanvas.height=h;
+  previewCanvas.style.maxWidth=w+'px';previewCanvas.style.maxHeight=h+'px';
+  $('previewCanvas').nextElementSibling.textContent=`Preview (${currentRatio})`;
+
+  if(bgType==='solid'){
+    const c=$('solidColor').value;
+    $('solidHex').textContent=c;
+    pctx.fillStyle=c;
+    pctx.fillRect(0,0,w,h);
+  } else if(bgType==='gradient'){
+    const c1=$('grad1').value, c2=$('grad2').value;
+    let grd;
+    if(gradDir==='to bottom') grd=pctx.createLinearGradient(0,0,0,h);
+    else if(gradDir==='to right') grd=pctx.createLinearGradient(0,0,w,0);
+    else if(gradDir==='to bottom right') grd=pctx.createLinearGradient(0,0,w,h);
+    else grd=pctx.createLinearGradient(w,0,0,h);
+    grd.addColorStop(0,c1);grd.addColorStop(1,c2);
+    pctx.fillStyle=grd;pctx.fillRect(0,0,w,h);
+    $('gradPreview').style.background=`linear-gradient(${gradDir},${c1},${c2})`;
+  } else if(bgType==='image'&&bgImageData){
+    const img=new Image();
+    img.onload=()=>{
+      pctx.drawImage(img,0,0,w,h);
+      drawVideoPlaceholder(w,h);
+    };
+    img.src=bgImageData;
+    return;
+  }
+  drawVideoPlaceholder(w,h);
+}
+
+function drawVideoPlaceholder(w,h){
+  // Draw a small video frame placeholder in center
+  const vw=w*0.85, vh=vw*(9/16);
+  const vx=(w-vw)/2, vy=(h-vh)/2;
+  pctx.fillStyle='rgba(0,0,0,0.3)';
+  pctx.fillRect(vx,vy,vw,vh);
+  pctx.strokeStyle='rgba(168,85,247,0.6)';
+  pctx.lineWidth=1.5;
+  pctx.strokeRect(vx,vy,vw,vh);
+  pctx.fillStyle='rgba(168,85,247,0.8)';
+  pctx.font=`bold ${Math.round(vh*0.35)}px sans-serif`;
+  pctx.textAlign='center';pctx.textBaseline='middle';
+  pctx.fillText('▶',w/2,h/2);
+}
+
+// ── Tab/Panel Controls ────────────────────────────────────────────
+function setRatio(ratio,el){
+  currentRatio=ratio;
+  document.querySelectorAll('.ratio-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updatePreview();
+  updateWmPreview();
+}
+
+function setBgTab(type,el){
+  bgType=type;
+  document.querySelectorAll('.bg-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.bg-panel').forEach(p=>p.classList.remove('show'));
+  $(`panel-${type}`).classList.add('show');
+  updatePreview();
+  updateWmPreview();
+}
+
+// ── Layout Editor State ──────────────────────────────────────────
+let layoutImg=null, layoutImgOffsetY=0, layoutDragging=false, layoutDragStartY=0, layoutDragStartOffset=0;
+
+function loadBgImage(input){
+  if(!input.files[0])return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    bgImageData=e.target.result;
+    // Show thumbnail in upload zone
+    $('imgUploadIcon').textContent='✅';
+    $('imgUploadText').textContent='Image Load Ho Gayi! Neeche editor mein set karo';
+    // Load into layout editor
+    const img=new Image();
+    img.onload=()=>{
+      layoutImg=img;
+      layoutImgOffsetY=0;
+      // Make sure Image tab is active
+      if(bgType!=='image'){
+        bgType='image';
+        document.querySelectorAll('.bg-tab').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.bg-tab').forEach(b=>{if(b.textContent.includes('Image'))b.classList.add('active')});
+        document.querySelectorAll('.bg-panel').forEach(p=>p.classList.remove('show'));
+        $('panel-image').classList.add('show');
+      }
+      $('layoutEditor').style.display='block';
+      $('layoutEditor').scrollIntoView({behavior:'smooth',block:'nearest'});
+      initLayoutCanvas();
+      updateLayoutEditor();
+    };
+    img.src=bgImageData;
+    updatePreview();
+    updateWmPreview();
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function initLayoutCanvas(){
+  const cvs=$('layoutCanvas');
+  const ratio=getRatioDims(currentRatio);
+  cvs.width=ratio.w*3; cvs.height=ratio.h*3; // 3x for sharpness
+
+  // Touch drag
+  cvs.addEventListener('mousedown',e=>{layoutDragging=true;layoutDragStartY=e.clientY;layoutDragStartOffset=layoutImgOffsetY;cvs.style.cursor='grabbing'});
+  cvs.addEventListener('mousemove',e=>{if(!layoutDragging)return;layoutImgOffsetY=layoutDragStartOffset+(e.clientY-layoutDragStartY)*3;updateLayoutEditor()});
+  cvs.addEventListener('mouseup',()=>{layoutDragging=false;cvs.style.cursor='grab'});
+  cvs.addEventListener('mouseleave',()=>{layoutDragging=false;cvs.style.cursor='grab'});
+
+  cvs.addEventListener('touchstart',e=>{layoutDragging=true;layoutDragStartY=e.touches[0].clientY;layoutDragStartOffset=layoutImgOffsetY;e.preventDefault()},{passive:false});
+  cvs.addEventListener('touchmove',e=>{if(!layoutDragging)return;layoutImgOffsetY=layoutDragStartOffset+(e.touches[0].clientY-layoutDragStartY)*3;updateLayoutEditor();e.preventDefault()},{passive:false});
+  cvs.addEventListener('touchend',()=>layoutDragging=false);
+}
+
+function updateLayoutEditor(){
+  if(!layoutImg)return;
+  const cvs=$('layoutCanvas');
+  const W=cvs.width, H=cvs.height;
+  const ctx=cvs.getContext('2d');
+
+  const topPct=parseInt($('topBarSlider').value)/100;
+  const botPct=parseInt($('botBarSlider').value)/100;
+  const zoom=parseInt($('imgZoomSlider').value)/100;
+
+  $('topBarVal').textContent=Math.round(topPct*100)+'%';
+  $('botBarVal').textContent=Math.round(botPct*100)+'%';
+  $('imgZoomVal').textContent=Math.round(zoom*100)+'%';
+
+  const topPx=Math.round(H*topPct);
+  const botPx=Math.round(H*botPct);
+  const midH=H-topPx-botPx;
+
+  // Draw image scaled + offset into middle area
+  const imgW=layoutImg.naturalWidth, imgH=layoutImg.naturalHeight;
+  const scaledW=W*zoom;
+  const scaledH=(imgH/imgW)*scaledW;
+  const imgX=(W-scaledW)/2;
+  const imgY=topPx+layoutImgOffsetY;
+
+  ctx.clearRect(0,0,W,H);
+  // Image
+  ctx.drawImage(layoutImg, imgX, imgY, scaledW, scaledH);
+
+  // Top black bar
+  ctx.fillStyle='#000000';
+  ctx.fillRect(0,0,W,topPx);
+
+  // Bottom black bar
+  ctx.fillStyle='#000000';
+  ctx.fillRect(0,H-botPx,W,botPx);
+
+  // Video area indicator (purple dashed box)
+  ctx.strokeStyle='rgba(168,85,247,0.7)';
+  ctx.lineWidth=4;
+  ctx.setLineDash([12,6]);
+  ctx.strokeRect(W*0.05, topPx+midH*0.05, W*0.9, midH*0.9);
+  ctx.setLineDash([]);
+
+  // Labels
+  ctx.fillStyle='rgba(168,85,247,0.9)';
+  ctx.font=`bold ${Math.round(H*0.02)}px Arial`;
+  ctx.textAlign='center';
+  if(topPx>20){ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText('◀ PART / EPISODE NAAM YAHAN ▶',W/2,topPx/2);}
+  ctx.fillStyle='rgba(168,85,247,0.8)';ctx.fillText('▶  VIDEO YAHAN PLAY HOGA  ◀',W/2,topPx+midH/2);
+  if(botPx>20){ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText('◀ EPISODE / USERNAME YAHAN ▶',W/2,H-botPx/2);}
+
+  // Save layout settings into bgImageData composite
+  saveBgComposite(W, H, topPx, botPx, zoom, ctx);
+  updatePreview();
+  updateWmPreview();
+}
+
+function saveBgComposite(W,H,topPx,botPx,zoom,ctx){
+  // Build final composite canvas for FFmpeg use
+  const cvs2=document.createElement('canvas');
+  cvs2.width=W; cvs2.height=H;
+  const c=cvs2.getContext('2d');
+  const scaledW=W*zoom;
+  const scaledH=(layoutImg.naturalHeight/layoutImg.naturalWidth)*scaledW;
+  const imgX=(W-scaledW)/2;
+  const imgY=topPx+layoutImgOffsetY;
+  c.drawImage(layoutImg,imgX,imgY,scaledW,scaledH);
+  c.fillStyle='#000000';
+  c.fillRect(0,0,W,topPx);
+  c.fillRect(0,H-botPx,W,botPx);
+  bgImageData=cvs2.toDataURL('image/png');
+}
+
+function applyLayoutPreset(top,bot){
+  $('topBarSlider').value=top;
+  $('botBarSlider').value=bot;
+  $('imgZoomSlider').value=100;
+  layoutImgOffsetY=0;
+  updateLayoutEditor();
+}
+
+// ── FFmpeg Loader ─────────────────────────────────────────────────
+function setErr(msg){
+  ffbox.className='ffbox err';ffIco.textContent='❌';
+  ffTtl.textContent='Load Failed';ffMsg.textContent=msg;
+  retryBtn.classList.add('show');
+}
+
+async function startLoad(){
+  retryBtn.classList.remove('show');
+  ffbox.className='ffbox';ffIco.textContent='⏳';
+  ffFill.style.width='5%';ffFill.classList.remove('done');
+  ffTtl.textContent='FFmpeg Load Ho Raha Hai...';
+  ffMsg.textContent='Download ho raha hai...';
+
+  let tries=0;
+  while(typeof FFmpeg==='undefined'&&tries<30){
+    await new Promise(r=>setTimeout(r,200));tries++;
+  }
+  if(typeof FFmpeg==='undefined'){
+    ffMsg.textContent='unpkg se try kar raha hai...';
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+      s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    }).catch(()=>{});
+    await new Promise(r=>setTimeout(r,1000));
+  }
+  if(typeof FFmpeg==='undefined'){setErr('FFmpeg load nahi hua. Retry karo.');return;}
+
+  ffFill.style.width='35%';
+  ffMsg.textContent='FFmpeg initialize ho raha hai...';
+  try{
+    const {createFFmpeg,fetchFile}=FFmpeg;
+    window._fetchFile=fetchFile;
+    ff=createFFmpeg({
+      log:false,
+      corePath:'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+      progress:({ratio})=>{if(window._ffProg)window._ffProg(Math.min(98,Math.round(ratio*100)));}
+    });
+    ffFill.style.width='55%';ffMsg.textContent='Core WASM load ho raha hai...';
+    await ff.load();
+    ffReady=true;
+    ffFill.style.width='100%';ffFill.classList.add('done');
+    ffbox.className='ffbox ok';ffIco.textContent='✅';
+    ffTtl.textContent='FFmpeg Ready!';
+    ffMsg.textContent='Background + Ratio + Real MP4 — sab ready! 🎉';
+    uploadZone.classList.remove('disabled');vidInput.disabled=false;
+    // Load saved settings after FFmpeg is ready
+    setTimeout(()=>{loadSettings();},400);
+  }catch(err){setErr('Error: '+err.message);}
+}
+startLoad();
+
+// ── Upload ────────────────────────────────────────────────────────
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('drag-over')});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+vidInput.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0])});
+
+function handleFile(file){
+  errBox.classList.remove('show');
+
+  // ── Fix: Chrome downloads ka MIME type galat hota hai
+  // Force accept karo — extension se type guess karo
+  const ext = file.name.split('.').pop().toLowerCase();
+  const mimeMap = {
+    mp4:'video/mp4', mkv:'video/x-matroska', webm:'video/webm',
+    avi:'video/x-msvideo', mov:'video/quicktime', flv:'video/x-flv',
+    wmv:'video/x-ms-wmv', m4v:'video/mp4', ts:'video/mp2t',
+    '3gp':'video/3gpp', mpeg:'video/mpeg', mpg:'video/mpeg'
+  };
+  // Agar MIME type blank/octet-stream hai to fix karo
+  let fixedFile = file;
+  if(!file.type || file.type === 'application/octet-stream' || file.type === ''){
+    const guessedType = mimeMap[ext] || 'video/mp4';
+    fixedFile = new File([file], file.name, {type: guessedType});
+  }
+
+  const url = URL.createObjectURL(fixedFile);
+  const v = document.createElement('video');
+  v.preload = 'metadata';
+  v.muted = true;
+
+  // Strategy 1: Direct src
+  v.src = url;
+
+  let loaded = false;
+
+  function onSuccess(){
+    if(loaded) return;
+    loaded = true;
+    const dur = v.duration;
+    if(!dur || !isFinite(dur) || dur <= 0){
+      // Duration nahi mila — try FileReader approach
+      tryFileReader();
+      return;
+    }
+    vidFile = fixedFile;
+    vidDur = dur;
+    URL.revokeObjectURL(url);
+    fname.textContent = file.name;
+    fmeta.textContent = `Duration: ${ft(vidDur)} • Size: ${(file.size/1048576).toFixed(1)} MB`;
+    fileInfo.classList.add('show');
+    buildParts();
+    updateBtn();
+  }
+
+  function tryFileReader(){
+    // Strategy 2: FileReader se ArrayBuffer banao
+    if(loaded) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const blob = new Blob([e.target.result], {type: mimeMap[ext]||'video/mp4'});
+      const url2 = URL.createObjectURL(blob);
+      const v2 = document.createElement('video');
+      v2.preload = 'metadata';
+      v2.src = url2;
+      v2.onloadedmetadata = () => {
+        if(loaded) return;
+        loaded = true;
+        vidFile = new File([e.target.result], file.name, {type: mimeMap[ext]||'video/mp4'});
+        vidDur = v2.duration;
+        URL.revokeObjectURL(url2);
+        fname.textContent = file.name;
+        fmeta.textContent = `Duration: ${ft(vidDur)} • Size: ${(file.size/1048576).toFixed(1)} MB`;
+        fileInfo.classList.add('show');
+        buildParts();
+        updateBtn();
+      };
+      v2.onerror = () => {
+        URL.revokeObjectURL(url2);
+        // Strategy 3: Duration estimate karo aur force accept karo
+        forceAccept();
+      };
+      setTimeout(() => { if(!loaded){ URL.revokeObjectURL(url2); forceAccept(); } }, 5000);
+    };
+    reader.onerror = () => forceAccept();
+    reader.readAsArrayBuffer(file.slice(0, Math.min(file.size, 10*1024*1024))); // First 10MB se metadata
+  }
+
+  function forceAccept(){
+    // Strategy 3: File ko force accept karo — FFmpeg khud handle karega
+    if(loaded) return;
+    loaded = true;
+    vidFile = fixedFile;
+    vidDur = 0; // Unknown — FFmpeg process karega
+    URL.revokeObjectURL(url);
+    fname.textContent = file.name;
+    fmeta.textContent = `Size: ${(file.size/1048576).toFixed(1)} MB • ⚠️ Duration auto-detect hoga`;
+    fileInfo.classList.add('show');
+    // Duration unknown hai to default 2 min parts banao
+    vidDur = file.size / (1024*1024*1.5) * 60; // Rough estimate ~1.5 MB/min
+    buildParts();
+    updateBtn();
+  }
+
+  v.onloadedmetadata = onSuccess;
+  // Kuch browsers mein loadeddata better kaam karta hai
+  v.onloadeddata = onSuccess;
+
+  v.onerror = () => {
+    // Error code check karo
+    const code = v.error ? v.error.code : 0;
+    // Code 4 = MEDIA_ERR_SRC_NOT_SUPPORTED — Chrome download issue
+    // Code 3 = decode error — file ok hai, try karo
+    if(code === 4 || code === 3 || code === 0){
+      tryFileReader();
+    } else {
+      URL.revokeObjectURL(url);
+      forceAccept();
+    }
+  };
+
+  // 8 second timeout — agar kuch nahi hua
+  setTimeout(() => {
+    if(!loaded){
+      tryFileReader();
+    }
+  }, 8000);
+}
+
+// ── Custom Time Range ─────────────────────────────────────────────
+function toggleCtr(){
+  const on=$('ctrEnabled').checked;
+  $('ctrBox').classList.toggle('show',on);
+  buildParts();
+}
+
+function parseTimeInput(val){
+  // Accepts: 0:35 / 1:20:05 / 80 / 1:20.5
+  if(!val||!val.trim())return null;
+  val=val.trim().replace(',','.');
+  const parts=val.split(':');
+  let sec=0;
+  if(parts.length===1) sec=parseFloat(parts[0]);
+  else if(parts.length===2) sec=parseInt(parts[0])*60+parseFloat(parts[1]);
+  else sec=parseInt(parts[0])*3600+parseInt(parts[1])*60+parseFloat(parts[2]);
+  return isNaN(sec)||sec<0?null:sec;
+}
+
+// ── Parts ─────────────────────────────────────────────────────────
+pMin.addEventListener('input',buildParts);pSec.addEventListener('input',buildParts);
+function buildParts(){
+  if(!vidFile||!vidDur)return;
+  const dur=(parseInt(pMin.value)||0)*60+(parseInt(pSec.value)||0);
+  if(dur<=0)return;
+
+  const ctrOn=$('ctrEnabled').checked;
+  let rangeStart=0, rangeEnd=vidDur;
+
+  if(ctrOn){
+    const sVal=$('ctrStart').value, eVal=$('ctrEnd').value;
+    const s=parseTimeInput(sVal), e=parseTimeInput(eVal);
+    const infoEl=$('ctrInfo');
+
+    // Validate
+    let errMsg='';
+    if(sVal&&s===null) errMsg='❌ Start time format galat hai (e.g. 0:35 ya 1:20:05)';
+    else if(eVal&&e===null) errMsg='❌ End time format galat hai';
+    else if(s!==null&&e!==null&&e<=s) errMsg='❌ End time, start time se bada hona chahiye';
+    else if(s!==null&&s>=vidDur) errMsg='❌ Start time video duration se zyada hai';
+
+    if(errMsg){infoEl.style.display='block';infoEl.innerHTML=`<span class="ctr-warn">${errMsg}</span>`;return;}
+
+    if(s!==null) rangeStart=Math.min(s,vidDur);
+    if(e!==null) rangeEnd=Math.min(e,vidDur);
+
+    const rangeLen=rangeEnd-rangeStart;
+    const totalParts=Math.ceil(rangeLen/dur);
+    const lastPartDur=rangeLen-(Math.floor(rangeLen/dur)*dur);
+    const lastPartSec=lastPartDur>0?lastPartDur:dur;
+
+    if(sVal||eVal){
+      infoEl.style.display='block';
+      const rangeFmt=`${ft(rangeStart)} → ${ft(rangeEnd)}`;
+      const rangeSecFmt=Math.round(rangeLen);
+      const lastFmt=lastPartDur>0
+        ? `<span class="ctr-warn">⚠️ Last part chhota hoga: <span class="ctr-hi">${Math.floor(lastPartSec/60)}:${p2(Math.round(lastPartSec%60))}</span> min</span>`
+        : `<span class="ctr-ok">✅ Sab parts equally ${Math.floor(dur/60)}:${p2(dur%60)} min ke honge</span>`;
+      infoEl.innerHTML=`📌 Range: <span class="ctr-hi">${rangeFmt}</span> (${rangeSecFmt}s total)<br>`
+        +`🔢 Parts banenge: <span class="ctr-hi">${totalParts}</span> × ${Math.floor(dur/60)}:${p2(dur%60)} min<br>`
+        +lastFmt;
+    } else {
+      infoEl.style.display='none';
+    }
+  } else {
+    $('ctrInfo').style.display='none';
+  }
+
+  const rangeLen=rangeEnd-rangeStart;
+  const total=Math.ceil(rangeLen/dur);
+  const prevOff=new Set(parts.filter(p=>p.off).map(p=>p.i));
+  parts=Array.from({length:total},(_,i)=>{
+    const s=rangeStart+i*dur;
+    const e=Math.min(rangeStart+(i+1)*dur,rangeEnd);
+    return {i,start:s,end:e,dur:e-s,off:prevOff.has(i)};
+  });
+  renderParts();pm.classList.add('show');updateBtn();
+}
+function renderParts(){
+  const active=parts.filter(p=>!p.off).length,skipped=parts.length-active;
+  pmCount.textContent=active;
+  pmSkipped.style.display=skipped>0?'block':'none';
+  if(skipped>0)pmSkipped.textContent=`${skipped} skip`;
+  pmGrid.innerHTML='';
+  parts.forEach((p,i)=>{
+    const chip=document.createElement('div');chip.className='p-chip'+(p.off?' off':'');
+    const txt=document.createElement('span');txt.textContent=`P${i+1}: ${ft(p.start)}–${ft(p.end)}`;
+    const x=document.createElement('span');x.className='p-x';x.textContent=p.off?'✓':'✕';
+    x.addEventListener('click',()=>{parts[i].off=!parts[i].off;renderParts();updateBtn()});
+    chip.append(txt,x);pmGrid.appendChild(chip);
+  });
+}
+function updateBtn(){splitBtn.disabled=!vidFile||!parts.some(p=>!p.off)||!ffReady}
+
+// ── Get FFmpeg background filter ─────────────────────────────────
+function getBgFFmpegArgs(outW, outH){
+  // Returns FFmpeg filter_complex string to composite video on background
+  if(bgType==='solid'){
+    const hex=$('solidColor').value.replace('#','');
+    const r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16);
+    return {
+      inputs:[],
+      filter:`color=c=0x${hex}:size=${outW}x${outH}:rate=30[bg];[bg][1:v]overlay=(W-w)/2:(H-h)/2[vout]`,
+      useBgFile:false,
+      colorHex:hex
+    };
+  } else if(bgType==='gradient'){
+    const c1=$('grad1').value.replace('#','');
+    const c2=$('grad2').value.replace('#','');
+    return {
+      inputs:[],
+      filter:null,
+      useBgFile:false,
+      colorHex:c1,
+      isGradient:true,
+      c1,c2,outW,outH,gradDir
+    };
+  } else if(bgType==='image'&&bgImageData){
+    return {inputs:[],filter:null,useBgFile:true,useBgImage:true};
+  }
+  return {inputs:[],filter:null,useBgFile:false,colorHex:'000000'};
+}
+
+// ── Create gradient image via canvas → PNG ────────────────────────
+function createGradientPNG(w,h,c1,c2,dir){
+  const cvs=document.createElement('canvas');cvs.width=w;cvs.height=h;
+  const ctx=cvs.getContext('2d');
+  let grd;
+  if(dir==='to bottom') grd=ctx.createLinearGradient(0,0,0,h);
+  else if(dir==='to right') grd=ctx.createLinearGradient(0,0,w,0);
+  else if(dir==='to bottom right') grd=ctx.createLinearGradient(0,0,w,h);
+  else grd=ctx.createLinearGradient(w,0,0,h);
+  grd.addColorStop(0,'#'+c1);grd.addColorStop(1,'#'+c2);
+  ctx.fillStyle=grd;ctx.fillRect(0,0,w,h);
+  return cvs.toDataURL('image/png');
+}
+
+// ── FFmpeg Cut + Background ───────────────────────────────────────
+async function cutPart(file,startSec,durSec,partIdx,outName,onProg){
+  const ext=file.name.split('.').pop()||'mp4';
+  // Unique names per part to avoid FFmpeg FS conflicts between parts
+  const uid=`p${partIdx+1}_${Date.now()}`;
+  const inName=`in_${uid}.${ext}`;
+  const bgPngName=`bg_${uid}.png`;
+  const bgJpgName=`bg_${uid}.jpg`;
+  const wmPngName=`wm_${uid}.png`;
+  window._ffProg=onProg;
+
+  // Determine output dimensions based on ratio
+  let outW,outH;
+  if(currentRatio==='9:16'){outW=1080;outH=1920;}
+  else if(currentRatio==='1:1'){outW=1080;outH=1080;}
+  else{outW=864;outH=1080;} // 4:5
+
+  // Write input video
+  ff.FS('writeFile',inName,await window._fetchFile(file));
+
+  const bgInfo=getBgFFmpegArgs(outW,outH);
+  let ffArgs;
+
+  if(bgInfo.isGradient){
+    // Create gradient PNG and write to FS
+    const gradPNG=createGradientPNG(outW,outH,bgInfo.c1,bgInfo.c2,bgInfo.gradDir);
+    const gradResp=await fetch(gradPNG);
+    const gradBuf=await gradResp.arrayBuffer();
+    ff.FS('writeFile',bgPngName,new Uint8Array(gradBuf));
+
+    ffArgs=[
+      '-loop','1','-i',bgPngName,
+      '-ss',String(startSec),'-i',inName,
+      '-t',String(durSec),
+      '-filter_complex',`[1:v]scale=${outW}:-2:force_original_aspect_ratio=decrease,pad=${outW}:${outH}:(${outW}-iw)/2:(${outH}-ih)/2:color=black@0[vid];[0:v][vid]overlay=0:0[vout]`,
+      '-map','[vout]','-map','1:a?',
+      '-c:v','libx264','-preset','ultrafast','-crf','23',
+      '-c:a','aac','-b:a','128k',
+      '-movflags','+faststart','-t',String(durSec),
+      '-avoid_negative_ts','make_zero',
+      outName
+    ];
+  } else if(bgInfo.useBgImage&&bgImageData){
+    // Write background image
+    const bgResp=await fetch(bgImageData);
+    const bgBuf=await bgResp.arrayBuffer();
+    ff.FS('writeFile',bgJpgName,new Uint8Array(bgBuf));
+
+    ffArgs=[
+      '-loop','1','-i',bgJpgName,
+      '-ss',String(startSec),'-i',inName,
+      '-t',String(durSec),
+      '-filter_complex',`[0:v]scale=${outW}:${outH}[bgscaled];[1:v]scale=${outW}:-2:force_original_aspect_ratio=decrease,pad=${outW}:${outH}:(${outW}-iw)/2:(${outH}-ih)/2:color=black@0[vid];[bgscaled][vid]overlay=0:0[vout]`,
+      '-map','[vout]','-map','1:a?',
+      '-c:v','libx264','-preset','ultrafast','-crf','23',
+      '-c:a','aac','-b:a','128k',
+      '-movflags','+faststart','-t',String(durSec),
+      '-avoid_negative_ts','make_zero',
+      outName
+    ];
+  } else {
+    // Solid color background
+    const hex=bgInfo.colorHex||'000000';
+    ffArgs=[
+      '-ss',String(startSec),'-i',inName,
+      '-t',String(durSec),
+      '-filter_complex',`color=0x${hex}:size=${outW}x${outH}:rate=30[bg];[0:v]scale=${outW}:-2:force_original_aspect_ratio=decrease,pad=${outW}:${outH}:(ow-iw)/2:(oh-ih)/2:color=0x${hex}[vid];[bg][vid]overlay=0:0[vout]`,
+      '-map','[vout]','-map','0:a?',
+      '-c:v','libx264','-preset','ultrafast','-crf','23',
+      '-c:a','aac','-b:a','128k',
+      '-movflags','+faststart',
+      '-avoid_negative_ts','make_zero',
+      outName
+    ];
+  }
+
+  await ff.run(...ffArgs);
+  let data=ff.FS('readFile',outName);
+
+  // ── Watermark via canvas overlay ──────────────────────────────────
+  if($('wmEnabled').checked){
+    const s=getWmSettings();
+    // Calculate correct part number: starting num + position among active parts
+    const activeIdx=parts.filter(p=>!p.off).findIndex(p=>p.i===partIdx);
+    s.partNum=(parseInt($('wmPartNum').value)||1)+activeIdx;
+
+    // ── WATERMARK CANVAS — draw at full output resolution ──
+    const wmCvs=document.createElement('canvas');
+    wmCvs.width=outW;wmCvs.height=outH;
+    const wcx=wmCvs.getContext('2d');
+    wcx.clearRect(0,0,outW,outH);
+
+    const partSzF=Math.round(outH*0.038);
+    const epSzF=Math.round(outH*(s.epSz/400));
+    const unSzF=Math.round(outH*(s.unSz/440));
+    const padF=Math.round(outH*0.006);
+
+    function drawElF(text,xN,yN,sz,color,isUn){
+      if(!text)return;
+      const px=xN*outW,py=yN*outH;
+      wcx.save();wcx.globalAlpha=s.opacity;
+      const italic=isUn&&s.unStyles.has('italic');
+      wcx.font=`${italic?'italic ':''} bold ${sz}px ${s.font},sans-serif`;
+      wcx.textAlign='center';wcx.textBaseline='middle';
+      const tw=wcx.measureText(text).width+padF*4,th=sz+padF*2;
+      if(s.bgBoxOn){wcx.fillStyle=s.bgColor;wcx.beginPath();wcx.roundRect(px-tw/2,py-th/2,tw,th,4);wcx.fill();}
+      if(isUn){
+        if(s.unStyles.has('shadow')){wcx.shadowColor='rgba(0,0,0,0.85)';wcx.shadowBlur=10;wcx.shadowOffsetX=3;wcx.shadowOffsetY=3;}
+        if(s.unStyles.has('outline')){wcx.strokeStyle='rgba(0,0,0,0.9)';wcx.lineWidth=5;wcx.lineJoin='round';wcx.strokeText(text,px,py);}
+        if(s.unStyles.has('glow')){wcx.shadowColor=s.unColor;wcx.shadowBlur=20;}
+        if(s.unStyles.has('gradient')){
+          const tm=wcx.measureText(text);
+          const grad=wcx.createLinearGradient(px-tm.width/2,py,px+tm.width/2,py);
+          grad.addColorStop(0,s.unColor);grad.addColorStop(1,s.unColor2||'#f59e0b');
+          wcx.fillStyle=grad;
+        } else {wcx.fillStyle=s.unColor;}
+        wcx.fillText(text,px,py);
+        wcx.shadowColor='transparent';wcx.shadowBlur=0;wcx.shadowOffsetX=0;wcx.shadowOffsetY=0;
+      } else {
+        wcx.fillStyle=color;wcx.fillText(text,px,py);
+      }
+      wcx.restore();
+    }
+    drawElF(`PART ${s.partNum}`,wmPositions.part.x,wmPositions.part.y,partSzF,s.textColor,false);
+    drawElF(s.episode,wmPositions.ep.x,wmPositions.ep.y,epSzF,s.textColor,false);
+    drawElF(s.username,wmPositions.un.x,wmPositions.un.y,unSzF,s.unColor,true);
+
+    // Convert canvas to PNG → FFmpeg
+    const wmDataUrl=wmCvs.toDataURL('image/png');
+    const wmResp=await fetch(wmDataUrl);
+    const wmBuf=await wmResp.arrayBuffer();
+    ff.FS('writeFile',wmPngName,new Uint8Array(wmBuf));
+
+    const outName2=`out_${uid}_wm.mp4`;
+    await ff.run(
+      '-i',outName,
+      '-i',wmPngName,
+      '-filter_complex','[0:v][1:v]overlay=0:0[vout]',
+      '-map','[vout]','-map','0:a?',
+      '-c:v','libx264','-preset','ultrafast','-crf','23',
+      '-c:a','aac','-b:a','128k',
+      '-movflags','+faststart',
+      outName2
+    );
+    data=ff.FS('readFile',outName2);
+    try{ff.FS('unlink',outName2);}catch(e){}
+    try{ff.FS('unlink',wmPngName);}catch(e){}
+  }
+
+  // ── Logo Overlay via canvas ───────────────────────────────────────
+  if($('logoEnabled').checked && logoImageData){
+    const ls=getLogoSettings();
+    const logoCvs=document.createElement('canvas');
+    logoCvs.width=outW; logoCvs.height=outH;
+    const lcx=logoCvs.getContext('2d');
+    lcx.clearRect(0,0,outW,outH);
+
+    await new Promise(resolve=>{
+      const logoImg=new Image();
+      logoImg.onload=()=>{
+        drawLogoOnCanvas(lcx, outW, outH, logoImg, ls);
+        resolve();
+      };
+      logoImg.src=logoImageData;
+    });
+
+    const logoLayerUrl=logoCvs.toDataURL('image/png');
+    const logoLayerResp=await fetch(logoLayerUrl);
+    const logoLayerBuf=await logoLayerResp.arrayBuffer();
+    const logoPngName=`logo_${uid}.png`;
+    ff.FS('writeFile',logoPngName,new Uint8Array(logoLayerBuf));
+
+    // Write current data as temp file so we can overlay logo
+    const preLogo=`pre_logo_${uid}.mp4`;
+    ff.FS('writeFile',preLogo,data);
+
+    const logoOut=`logo_out_${uid}.mp4`;
+    await ff.run(
+      '-i',preLogo,
+      '-i',logoPngName,
+      '-filter_complex','[0:v][1:v]overlay=0:0[vout]',
+      '-map','[vout]','-map','0:a?',
+      '-c:v','libx264','-preset','ultrafast','-crf','23',
+      '-c:a','aac','-b:a','128k',
+      '-movflags','+faststart',
+      logoOut
+    );
+    data=ff.FS('readFile',logoOut);
+    try{ff.FS('unlink',logoOut);}catch(e){}
+    try{ff.FS('unlink',preLogo);}catch(e){}
+    try{ff.FS('unlink',logoPngName);}catch(e){}
+  }
+
+  // Cleanup
+  try{ff.FS('unlink',inName);}catch(e){}
+  try{ff.FS('unlink',outName);}catch(e){}
+  try{ff.FS('unlink',bgPngName);}catch(e){}
+  try{ff.FS('unlink',bgJpgName);}catch(e){}
+
+  window._ffProg=null;
+  return new Blob([data.buffer],{type:'video/mp4'});
+}
+
+// ── Split ─────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════
+// BACKGROUND PROCESSING FIX — 3 Layer System
+// ══════════════════════════════════════════════════════
+var _wakeLock=null,_silentAudio=null,_heartbeatTimer=null,_isProcessing=false;
+
+function _startSilentAudio(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    _silentAudio=new AC();
+    var osc=_silentAudio.createOscillator();
+    var gain=_silentAudio.createGain();
+    gain.gain.value=0.001;
+    osc.connect(gain);
+    gain.connect(_silentAudio.destination);
+    osc.start();
+    console.log('[BG] Silent audio OK');
+  }catch(e){console.warn('[BG] Audio:',e.message);}
+}
+
+function _stopSilentAudio(){
+  try{if(_silentAudio){_silentAudio.close();_silentAudio=null;}}catch(e){}
+}
+
+function _acquireWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  navigator.wakeLock.request('screen').then(function(wl){
+    _wakeLock=wl;
+    _wakeLock.addEventListener('release',function(){
+      if(_isProcessing){_acquireWakeLock();}
+    });
+    console.log('[BG] WakeLock OK');
+  }).catch(function(e){console.warn('[BG] WakeLock:',e.message);});
+}
+
+function _releaseWakeLock(){
+  try{if(_wakeLock){_wakeLock.release();_wakeLock=null;}}catch(e){}
+}
+
+function _startHeartbeat(){
+  _heartbeatTimer=setInterval(function(){
+    if(!_isProcessing)return;
+    if(!_wakeLock||_wakeLock.released)_acquireWakeLock();
+    if(_silentAudio&&_silentAudio.state==='suspended'){
+      _silentAudio.resume().catch(function(){});
+    }
+  },500);
+}
+
+function _stopHeartbeat(){
+  clearInterval(_heartbeatTimer);
+  _heartbeatTimer=null;
+}
+
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&_isProcessing){
+    if(_silentAudio&&_silentAudio.state==='suspended'){
+      _silentAudio.resume().catch(function(){});
+    }
+    if(!_wakeLock||_wakeLock.released)_acquireWakeLock();
+  }
+});
+
+function startBackgroundMode(){
+  _isProcessing=true;
+  _startSilentAudio();
+  _acquireWakeLock();
+  _startHeartbeat();
+  var el=$('bgProcessStatus');
+  if(el){
+    el.style.display='block';
+    el.style.background='rgba(52,211,153,.1)';
+    el.style.border='1px solid rgba(52,211,153,.3)';
+    el.style.color='var(--success)';
+    el.textContent='🔆 Background Mode ON — Doosre app mein jao, processing chalti rahegi!';
+  }
+}
+
+function stopBackgroundMode(){
+  _isProcessing=false;
+  _stopHeartbeat();
+  _stopSilentAudio();
+  _releaseWakeLock();
+  var el=$('bgProcessStatus');
+  if(el)el.style.display='none';
+}
+
+splitBtn.addEventListener('click',doSplit);
+async function doSplit(){
+  const active=parts.filter(p=>!p.off);
+  if(!vidFile||!active.length||!ffReady)return;
+  splitBtn.disabled=true;blobs=[];
+  startBackgroundMode();
+  procWrap.classList.add('show');procList.innerHTML='';
+  oBar.style.width='0%';oPct.textContent='0%';
+  oLabel.textContent='Shuru ho raha hai...';
+  procTitle.textContent=`0 / ${active.length} parts done`;
+  batStart(); // 🦇 Batman GO!
+
+  parts.forEach(p=>{
+    const row=document.createElement('div');
+    row.id=`pr${p.i}`;row.className='proc-row'+(p.off?' skp':'');
+    row.innerHTML=`<div class="proc-icn" id="pi${p.i}">${p.off?'⏭️':'⏳'}</div>
+      <div class="proc-info"><div class="proc-name">PART ${p.i+1}</div>
+      <div class="proc-time">${fhms(p.start)} → ${fhms(p.end)}</div>
+      <button class="proc-retry-btn" id="rb${p.i}" style="display:none;margin-top:5px;padding:4px 12px;background:rgba(251,191,36,.15);border:1px solid #fbbf24;border-radius:6px;color:#fbbf24;font-size:11px;font-weight:700;cursor:pointer" onclick="retryPart(${p.i})">🔄 Try Again</button>
+      </div>
+      <div class="mini-bar-bg"><div class="mini-bar-fill" id="pb${p.i}"></div></div>
+      <div class="proc-stat wait" id="ps${p.i}">${p.off?'Skipped':'Waiting'}</div>`;
+    procList.appendChild(row);
+  });
+  procWrap.scrollIntoView({behavior:'smooth'});
+  const base=vidFile.name.replace(/\.[^.]+$/,'');
+  let done=0;
+
+  for(const p of active){
+    const row=$(`pr${p.i}`),icn=$(`pi${p.i}`),stat=$(`ps${p.i}`),mb=$(`pb${p.i}`);
+    row.className='proc-row active';
+    icn.innerHTML='<div class="spinner"></div>';
+    stat.className='proc-stat run';stat.textContent='Processing...';
+    oLabel.textContent=`Part ${p.i+1} — Background add + Encode...`;
+    procTitle.textContent=`${done} / ${active.length} parts done`;
+    row.scrollIntoView({behavior:'smooth',block:'nearest'});
+    try{
+      const outName=`out_${p.i+1}_${Date.now()}.mp4`;
+      const blob=await cutPart(vidFile,p.start,p.dur,p.i,outName,pct=>{
+        mb.style.width=pct+'%';
+        const ov=((done/active.length)+(pct/100/active.length))*100;
+        oBar.style.width=ov+'%';oPct.textContent=Math.round(ov)+'%';
+      });
+      blobs.push({blob,name:`${base}_Part${p.i+1}_${currentRatio.replace(':','x')}.mp4`});
+      done++;
+      row.className='proc-row done';icn.textContent='✅';
+      stat.className='proc-stat ok';stat.textContent=`${(blob.size/1048576).toFixed(1)} MB`;
+      oBar.style.width=(done/active.length*100)+'%';
+      oPct.textContent=Math.round(done/active.length*100)+'%';
+      procTitle.textContent=`${done} / ${active.length} parts done`;
+    }catch(err){
+      row.className='proc-row';icn.textContent='❌';
+      stat.className='proc-stat skip';stat.textContent='Error';
+      const rb=$(`rb${p.i}`);if(rb)rb.style.display='inline-block';
+      showErr(`Part ${p.i+1}: ${err.message}`);
+      console.error(err);
+    }
+  }
+  oBar.style.width='100%';oPct.textContent='100%';
+  oLabel.textContent='🎉 Sab ho gaya!';
+  procTitle.textContent=`${done} parts ready!`;
+  stopBackgroundMode();
+  if(blobs.length>0)showDL();
+  splitBtn.disabled=false;
+}
+
+// ── Retry Single Failed Part ──────────────────────────────────────
+async function retryPart(partIdx){
+  const p=parts.find(x=>x.i===partIdx);
+  if(!p||!vidFile){alert('Video file nahi mili — please dobara upload karo');return;}
+  const row=$(`pr${partIdx}`),icn=$(`pi${partIdx}`),
+        stat=$(`ps${partIdx}`),mb=$(`pb${partIdx}`),rb=$(`rb${partIdx}`);
+  if(rb)rb.style.display='none';
+  row.className='proc-row active';
+  icn.innerHTML='<div class="spinner"></div>';
+  stat.className='proc-stat run';stat.textContent='Retrying...';
+  mb.style.width='0%';
+  errBox.classList.remove('show');
+  try{
+    const outName=`out_${partIdx+1}_${Date.now()}.mp4`;
+    const blob=await cutPart(vidFile,p.start,p.dur,partIdx,outName,pct=>{
+      mb.style.width=pct+'%';
+    });
+    // Replace existing blob or add new
+    const base=vidFile.name.replace(/\.[^.]+$/,'');
+    const bname=`${base}_Part${partIdx+1}_${currentRatio.replace(':','x')}.mp4`;
+    const idx=blobs.findIndex(b=>b.name.includes(`_Part${partIdx+1}_`));
+    if(idx>=0)blobs[idx]={blob,name:bname};
+    else blobs.push({blob,name:bname});
+    row.className='proc-row done';icn.textContent='✅';
+    stat.className='proc-stat ok';stat.textContent=`${(blob.size/1048576).toFixed(1)} MB`;
+    showDL();
+  }catch(err){
+    row.className='proc-row';icn.textContent='❌';
+    stat.className='proc-stat skip';stat.textContent='Error';
+    if(rb)rb.style.display='inline-block';
+    showErr(`Part ${partIdx+1} retry failed: ${err.message}`);
+    console.error(err);
+  }
+}
+
+// ── Settings Save / Load (localStorage) ──────────────────────────
+function saveSettings(){
+  try{
+    const data={
+      wmEnabled:$('wmEnabled')?.checked,
+      wmPartNum:$('wmPartNum')?.value,
+      wmEpisode:$('wmEpisode')?.value,
+      wmUsername:$('wmUsername')?.value,
+      wmColor:$('wmColor')?.value,
+      wmBgColor:$('wmBgColor')?.value,
+      wmBgBoxEnabled:$('wmBgBoxEnabled')?.checked,
+      wmOpacity:$('wmOpacity')?.value,
+      wmEpSize:$('wmEpSize')?.value,
+      wmUnSize:$('wmUnSize')?.value,
+      wmUnColor:wmUnColor||'#a855f7',
+      wmUnColor2:$('wmUnColor2')?.value,
+      pMin:$('pMin')?.value,
+      pSec:$('pSec')?.value,
+      ratio:currentRatio,
+      bgType:bgType,
+      solidColor:$('solidColor')?.value,
+      grad1:$('grad1')?.value,
+      grad2:$('grad2')?.value,
+      gradDir:gradDir,
+      logoEnabled:$('logoEnabled')?.checked,
+      logoSize:$('logoSize')?.value,
+      logoMargin:$('logoMargin')?.value,
+      logoOpacity:$('logoOpacity')?.value,
+      logoBgCircle:$('logoBgCircle')?.checked,
+      logoShape:logoShape,
+      logoPos:JSON.stringify(logoPos),
+      wmPositions:JSON.stringify(wmPositions),
+    };
+    localStorage.setItem('ckd_v2_settings',JSON.stringify(data));
+  }catch(e){console.warn('saveSettings:',e);}
+}
+
+function loadSettings(){
+  try{
+    const raw=localStorage.getItem('ckd_v2_settings');
+    if(!raw)return;
+    const d=JSON.parse(raw);
+
+    // Watermark
+    if($('wmEnabled')&&d.wmEnabled!==undefined)$('wmEnabled').checked=d.wmEnabled;
+    if($('wmPartNum')&&d.wmPartNum)$('wmPartNum').value=d.wmPartNum;
+    if($('wmEpisode')&&d.wmEpisode)$('wmEpisode').value=d.wmEpisode;
+    if($('wmUsername')&&d.wmUsername)$('wmUsername').value=d.wmUsername;
+    if($('wmColor')&&d.wmColor)$('wmColor').value=d.wmColor;
+    if($('wmBgColor')&&d.wmBgColor)$('wmBgColor').value=d.wmBgColor;
+    if($('wmBgBoxEnabled')&&d.wmBgBoxEnabled!==undefined)$('wmBgBoxEnabled').checked=d.wmBgBoxEnabled;
+    if($('wmOpacity')&&d.wmOpacity)$('wmOpacity').value=d.wmOpacity;
+    if($('wmEpSize')&&d.wmEpSize)$('wmEpSize').value=d.wmEpSize;
+    if($('wmUnSize')&&d.wmUnSize)$('wmUnSize').value=d.wmUnSize;
+    if(d.wmUnColor){wmUnColor=d.wmUnColor;if($('wmUnColor'))$('wmUnColor').value=d.wmUnColor;if($('wmUnColorHex'))$('wmUnColorHex').textContent=d.wmUnColor;}
+    if($('wmUnColor2')&&d.wmUnColor2)$('wmUnColor2').value=d.wmUnColor2;
+
+    // Parts duration
+    if($('pMin')&&d.pMin)$('pMin').value=d.pMin;
+    if($('pSec')&&d.pSec)$('pSec').value=d.pSec;
+
+    // Background
+    if(d.bgType){
+      bgType=d.bgType;
+      document.querySelectorAll('.bg-tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.bg===d.bgType));
+      document.querySelectorAll('.bg-panel').forEach(p=>p.classList.remove('show'));
+      const panel=$(`${d.bgType}Panel`);if(panel)panel.classList.add('show');
+    }
+    if($('solidColor')&&d.solidColor){$('solidColor').value=d.solidColor;if($('solidHex'))$('solidHex').textContent=d.solidColor;}
+    if($('grad1')&&d.grad1)$('grad1').value=d.grad1;
+    if($('grad2')&&d.grad2)$('grad2').value=d.grad2;
+    if(d.gradDir)gradDir=d.gradDir;
+
+    // Ratio
+    if(d.ratio){
+      currentRatio=d.ratio;
+      document.querySelectorAll('.ratio-btn').forEach(b=>b.classList.toggle('active',b.dataset.ratio===d.ratio));
+    }
+
+    // Logo
+    if($('logoEnabled')&&d.logoEnabled!==undefined)$('logoEnabled').checked=d.logoEnabled;
+    if($('logoSize')&&d.logoSize)$('logoSize').value=d.logoSize;
+    if($('logoMargin')&&d.logoMargin)$('logoMargin').value=d.logoMargin;
+    if($('logoOpacity')&&d.logoOpacity)$('logoOpacity').value=d.logoOpacity;
+    if($('logoBgCircle')&&d.logoBgCircle!==undefined)$('logoBgCircle').checked=d.logoBgCircle;
+    if(d.logoShape)logoShape=d.logoShape;
+    if(d.logoPos)try{logoPos=JSON.parse(d.logoPos);}catch(e){}
+    if(d.wmPositions)try{wmPositions=JSON.parse(d.wmPositions);}catch(e){}
+
+    // Refresh previews
+    if(typeof updateWmPreview==='function')updateWmPreview();
+    console.log('✅ Settings loaded from localStorage');
+  }catch(e){console.warn('loadSettings:',e);}
+}
+function showDL(){
+  dlList.innerHTML='';
+  blobs.forEach(item=>{
+    const url=URL.createObjectURL(item.blob);
+    const row=document.createElement('div');row.className='dl-row';
+    const btn=document.createElement('button');btn.className='btn-dl';btn.textContent='⬇️ Download';
+    btn.addEventListener('click',()=>dlFile(url,item.name));
+    row.innerHTML=`<div class="dl-left"><div style="font-size:20px">🎬</div><div>
+      <div class="dl-name">${item.name}</div>
+      <div class="dl-sz">${(item.blob.size/1048576).toFixed(1)} MB • ${currentRatio} MP4 ✅</div>
+    </div></div>`;
+    row.appendChild(btn);dlList.appendChild(row);
+  });
+  dlWrap.classList.add('show');dlWrap.scrollIntoView({behavior:'smooth'});
+  if(window._animStop) window._animStop(); else batStop(); // 🎉 Done!
+}
+function dlFile(url,name){const a=document.createElement('a');a.href=url;a.download=name;a.click()}
+dlAll.addEventListener('click',()=>{blobs.forEach((item,i)=>{const url=URL.createObjectURL(item.blob);setTimeout(()=>dlFile(url,item.name),i*800)})});
+resetBtn.addEventListener('click',()=>{
+  vidFile=null;vidDur=0;blobs=[];parts=[];
+  fileInfo.classList.remove('show');pm.classList.remove('show');
+  procWrap.classList.remove('show');dlWrap.classList.remove('show');
+  procList.innerHTML='';dlList.innerHTML='';vidInput.value='';
+  oBar.style.width='0%';errBox.classList.remove('show');
+  $('ctrEnabled').checked=false;$('ctrBox').classList.remove('show');
+  $('ctrStart').value='';$('ctrEnd').value='';$('ctrInfo').style.display='none';
+  if(window._animStop) window._animStop(); else batStop(); // reset
+  updateBtn();
+});
+
+// ── Watermark Functions ────────────────────────────────────────────
+function setWmFont(el){
+  wmFont=el.dataset.font;
+  document.querySelectorAll('.wm-font-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateWmPreview();
+}
+
+function getWmSettings(){
+  const epSz=parseInt($('wmEpSize').value)||12;
+  const unSz=parseInt($('wmUnSize').value)||11;
+  $('wmEpSizeVal').textContent=epSz;
+  $('wmUnSizeVal').textContent=unSz;
+  $('wmOpacityVal').textContent=$('wmOpacity').value+'%';
+  return {
+    enabled:$('wmEnabled').checked,
+    partNum:parseInt($('wmPartNum').value)||1,
+    episode:($('wmEpisode').value||'').trim(),
+    username:($('wmUsername').value||'').trim(),
+    textColor:$('wmColor').value,
+    bgColor:$('wmBgColor').value,
+    bgBoxOn:$('wmBgBoxEnabled').checked,
+    opacity:parseInt($('wmOpacity').value)/100,
+    epSz, unSz,
+    font:wmFont,
+    unColor:wmUnColor,
+    unColor2:($('wmUnColor2')&&$('wmUnColor2').value)||'#f59e0b',
+    unStyles:new Set(unStyles),
+  };
+}
+
+// ── Username color palette ────────────────────────────────────────
+const UN_COLORS=['#a855f7','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#ffffff','#000000','#f97316','#06b6d4','#84cc16','#8b5cf6','#fbbf24','#e11d48','#0ea5e9'];
+function buildUnColorPalette(){
+  const pal=$('unColorPalette');
+  if(!pal||pal.children.length>0)return;
+  UN_COLORS.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='un-color-dot'+(c===wmUnColor?' active':'');
+    d.style.background=c;d.title=c;
+    d.onclick=()=>{
+      wmUnColor=c;$('wmUnColor').value=c;$('wmUnColorHex').textContent=c;
+      document.querySelectorAll('.un-color-dot').forEach(x=>x.classList.remove('active'));
+      d.classList.add('active');updateWmPreview();
+    };
+    pal.appendChild(d);
+  });
+}
+function onUnColorPick(){
+  wmUnColor=$('wmUnColor').value;$('wmUnColorHex').textContent=wmUnColor;
+  document.querySelectorAll('.un-color-dot').forEach(x=>x.classList.remove('active'));
+  updateWmPreview();
+}
+function toggleUnStyle(style,el){
+  if(unStyles.has(style))unStyles.delete(style);else unStyles.add(style);
+  el.classList.toggle('active');
+  $('unGradRow').style.display=unStyles.has('gradient')?'flex':'none';
+  updateWmPreview();
+}
+
+// ── Drag canvas for watermark positions ───────────────────────────
+let _wmDragEl=null;
+function initWmDragCanvas(){
+  const cvs=$('wmDragCanvas');
+  if(!cvs||cvs._inited)return;
+  cvs._inited=true;
+  function getCanvasPos(e){
+    const r=cvs.getBoundingClientRect();
+    const scaleX=cvs.width/r.width,scaleY=cvs.height/r.height;
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    return{x:cx*scaleX,y:cy*scaleY};
+  }
+  function hitTest(px,py){
+    const sz=Math.round(cvs.height*0.055);
+    for(const key of['part','ep','un']){
+      const ex=wmPositions[key].x*cvs.width,ey=wmPositions[key].y*cvs.height;
+      if(Math.abs(px-ex)<sz*2.5&&Math.abs(py-ey)<sz*1.5)return key;
+    }
+    return null;
+  }
+  cvs.addEventListener('mousedown',e=>{const p=getCanvasPos(e);_wmDragEl=hitTest(p.x,p.y);if(_wmDragEl){e.preventDefault();cvs.style.cursor='grabbing';}});
+  cvs.addEventListener('mousemove',e=>{if(!_wmDragEl)return;e.preventDefault();const p=getCanvasPos(e);wmPositions[_wmDragEl]={x:Math.max(0.05,Math.min(0.95,p.x/cvs.width)),y:Math.max(0.02,Math.min(0.98,p.y/cvs.height))};drawWmDragCanvas();updateWmPreview();});
+  cvs.addEventListener('mouseup',()=>{_wmDragEl=null;cvs.style.cursor='default';});
+  cvs.addEventListener('mouseleave',()=>{_wmDragEl=null;});
+  cvs.addEventListener('touchstart',e=>{const p=getCanvasPos(e);_wmDragEl=hitTest(p.x,p.y);if(_wmDragEl)e.preventDefault();},{passive:false});
+  cvs.addEventListener('touchmove',e=>{if(!_wmDragEl)return;e.preventDefault();const p=getCanvasPos(e);wmPositions[_wmDragEl]={x:Math.max(0.05,Math.min(0.95,p.x/cvs.width)),y:Math.max(0.02,Math.min(0.98,p.y/cvs.height))};drawWmDragCanvas();updateWmPreview();},{passive:false});
+  cvs.addEventListener('touchend',()=>{_wmDragEl=null;});
+}
+function drawWmDragCanvas(){
+  const cvs=$('wmDragCanvas');if(!cvs)return;
+  const {w,h}=getRatioDims(currentRatio);cvs.width=w;cvs.height=h;
+  const ctx=cvs.getContext('2d');const s=getWmSettings();
+  // BG
+  if(bgType==='solid'){ctx.fillStyle=$('solidColor').value;ctx.fillRect(0,0,w,h);}
+  else if(bgType==='gradient'){const c1=$('grad1').value,c2=$('grad2').value;let grd;if(gradDir==='to bottom')grd=ctx.createLinearGradient(0,0,0,h);else if(gradDir==='to right')grd=ctx.createLinearGradient(0,0,w,0);else if(gradDir==='to bottom right')grd=ctx.createLinearGradient(0,0,w,h);else grd=ctx.createLinearGradient(w,0,0,h);grd.addColorStop(0,c1);grd.addColorStop(1,c2);ctx.fillStyle=grd;ctx.fillRect(0,0,w,h);}
+  else{ctx.fillStyle='#111';ctx.fillRect(0,0,w,h);}
+  // Video placeholder
+  const vw=w*0.9,vh=vw*(9/16),vx=(w-vw)/2,vy=(h-vh)/2;
+  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(vx,vy,vw,vh);
+  ctx.strokeStyle='rgba(168,85,247,0.5)';ctx.lineWidth=1;ctx.strokeRect(vx,vy,vw,vh);
+  ctx.fillStyle='rgba(168,85,247,0.6)';ctx.font=`bold ${Math.round(vh*0.22)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('▶',w/2,vy+vh/2);
+  // Draggable handles
+  const items=[{key:'part',label:`PART ${s.partNum}`,color:'#facc15'},{key:'ep',label:s.episode||'Episode Name',color:'#34d399'},{key:'un',label:s.username||'@Username',color:'#a855f7'}];
+  const fsz=Math.max(5,Math.round(h*0.038));
+  items.forEach(item=>{
+    const px=wmPositions[item.key].x*w,py=wmPositions[item.key].y*h;
+    ctx.save();ctx.font=`bold ${fsz}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';
+    const tw=ctx.measureText(item.label).width+10,th=fsz+8;
+    ctx.fillStyle='rgba(0,0,0,0.65)';ctx.beginPath();ctx.roundRect(px-tw/2,py-th/2,tw,th,4);ctx.fill();
+    ctx.strokeStyle=item.color;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(px-tw/2,py-th/2,tw,th,4);ctx.stroke();
+    ctx.fillStyle=item.color;ctx.fillText(item.label,px,py);ctx.restore();
+  });
+}
+function resetWmPositions(preset){
+  if(preset==='default'){wmPositions={part:{x:0.5,y:0.28},ep:{x:0.5,y:0.73},un:{x:0.5,y:0.80}};}
+  else if(preset==='top'){wmPositions={part:{x:0.5,y:0.06},ep:{x:0.5,y:0.13},un:{x:0.5,y:0.20}};}
+  else if(preset==='bottom'){wmPositions={part:{x:0.5,y:0.80},ep:{x:0.5,y:0.88},un:{x:0.5,y:0.94}};}
+  else if(preset==='corners'){wmPositions={part:{x:0.15,y:0.06},ep:{x:0.5,y:0.94},un:{x:0.85,y:0.06}};}
+  drawWmDragCanvas();updateWmPreview();
+}
+
+function updateWmPreview(){
+  buildUnColorPalette();getWmSettings();initWmDragCanvas();drawWmDragCanvas();
+  saveSettings();
+  const {w,h}=getRatioDims(currentRatio);
+  const wmC=$('wmCanvas');wmC.width=w;wmC.height=h;
+  const cx=wmC.getContext('2d');
+  if(bgType==='solid'){cx.fillStyle=$('solidColor').value;cx.fillRect(0,0,w,h);}
+  else if(bgType==='gradient'){const c1=$('grad1').value,c2=$('grad2').value;let grd;if(gradDir==='to bottom')grd=cx.createLinearGradient(0,0,0,h);else if(gradDir==='to right')grd=cx.createLinearGradient(0,0,w,0);else if(gradDir==='to bottom right')grd=cx.createLinearGradient(0,0,w,h);else grd=cx.createLinearGradient(w,0,0,h);grd.addColorStop(0,c1);grd.addColorStop(1,c2);cx.fillStyle=grd;cx.fillRect(0,0,w,h);}
+  else if(bgType==='image'&&bgImageData){const img=new Image();img.onload=()=>{cx.drawImage(img,0,0,w,h);drawWmVideoAndText(cx,w,h);};img.src=bgImageData;return;}
+  drawWmVideoAndText(cx,w,h);
+}
+
+function applyUnStyle(ctx,s,text,x,y,color,color2){
+  const styles=s.unStyles;
+  if(styles.has('shadow')){ctx.shadowColor='rgba(0,0,0,0.85)';ctx.shadowBlur=7;ctx.shadowOffsetX=2;ctx.shadowOffsetY=2;}
+  if(styles.has('outline')){ctx.strokeStyle='rgba(0,0,0,0.9)';ctx.lineWidth=4;ctx.lineJoin='round';ctx.strokeText(text,x,y);}
+  if(styles.has('glow')){ctx.shadowColor=color;ctx.shadowBlur=14;}
+  if(styles.has('gradient')){
+    const tm=ctx.measureText(text);
+    const grad=ctx.createLinearGradient(x-tm.width/2,y,x+tm.width/2,y);
+    grad.addColorStop(0,color);grad.addColorStop(1,color2||'#f59e0b');
+    ctx.fillStyle=grad;
+  } else {ctx.fillStyle=color;}
+  ctx.fillText(text,x,y);
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+}
+
+function drawWmVideoAndText(cx,w,h){
+  const s=getWmSettings();
+  const vw=w*0.9,vh=vw*(9/16),vx=(w-vw)/2,vy=(h-vh)/2;
+  cx.fillStyle='rgba(0,0,0,0.3)';cx.fillRect(vx,vy,vw,vh);
+  cx.strokeStyle='rgba(168,85,247,0.5)';cx.lineWidth=1;cx.strokeRect(vx,vy,vw,vh);
+  cx.fillStyle='rgba(168,85,247,0.8)';cx.font=`bold ${Math.round(vh*0.22)}px sans-serif`;
+  cx.textAlign='center';cx.textBaseline='middle';cx.fillText('▶',w/2,vy+vh/2);
+  if(!s.enabled)return;
+  const partSz=Math.max(6,Math.round(h*0.038));
+  const epSzPx=Math.max(5,Math.round(h*(s.epSz/400)));
+  const unSzPx=Math.max(5,Math.round(h*(s.unSz/440)));
+  const pad=Math.round(h*0.006);
+  function drawEl(text,xN,yN,sz,color,isUn){
+    if(!text)return;
+    const px=xN*w,py=yN*h;
+    cx.save();cx.globalAlpha=s.opacity;
+    const italic=isUn&&s.unStyles.has('italic');
+    cx.font=`${italic?'italic ':''} bold ${sz}px ${s.font},sans-serif`;
+    cx.textAlign='center';cx.textBaseline='middle';
+    const tw=cx.measureText(text).width+pad*4,th=sz+pad*2;
+    if(s.bgBoxOn){cx.fillStyle=s.bgColor;cx.beginPath();cx.roundRect(px-tw/2,py-th/2,tw,th,4);cx.fill();}
+    if(isUn){applyUnStyle(cx,s,text,px,py,color,s.unColor2);}
+    else{cx.fillStyle=color;cx.fillText(text,px,py);}
+    cx.restore();
+  }
+  drawEl(`PART ${s.partNum}`,wmPositions.part.x,wmPositions.part.y,partSz,s.textColor,false);
+  drawEl(s.episode,wmPositions.ep.x,wmPositions.ep.y,epSzPx,s.textColor,false);
+  drawEl(s.username,wmPositions.un.x,wmPositions.un.y,unSzPx,s.unColor,true);
+}
+
+// ── Logo Overlay Functions ────────────────────────────────────────
+function toggleLogoSection(){
+  const on=$('logoEnabled').checked;
+  $('logoControls').style.display=on?'block':'none';
+  if(on) updateLogoPreview();
+}
+
+function loadLogoImage(input){
+  if(!input.files[0])return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    logoImageData=e.target.result;
+    $('logoUploadIcon').textContent='✅';
+    $('logoUploadText').textContent='Logo load ho gaya!';
+    const prev=$('logoPreviewImg');
+    prev.src=logoImageData;
+    $('logoPreviewWrap').style.display='block';
+    updateLogoPreview();
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function setLogoShape(shape,el){
+  logoShape=shape;
+  document.querySelectorAll('.logo-shape-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateLogoPreview();
+}
+
+function setLogoPos(pos,el){
+  logoPos=pos;
+  document.querySelectorAll('.logo-pos-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  updateLogoPreview();
+}
+
+function getLogoSettings(){
+  const size=parseInt($('logoSize').value)||15;
+  const margin=parseInt($('logoMargin').value)||3;
+  const opacity=parseInt($('logoOpacity').value)/100;
+  const bgCircle=$('logoBgCircle').checked;
+  $('logoSizeVal').textContent=size+'%';
+  $('logoMarginVal').textContent=margin+'%';
+  $('logoOpacityVal').textContent=Math.round(opacity*100)+'%';
+  return{size,margin,opacity,bgCircle,pos:logoPos,shape:logoShape};
+}
+
+// Draw logo on a canvas context at given full output dimensions
+function drawLogoOnCanvas(ctx, outW, outH, logoImg, s){
+  const logoW=Math.round(outW*(s.size/100));
+  const logoH=logoW; // square bounding box
+  const marginPx=Math.round(outW*(s.margin/100));
+
+  // Calculate X,Y from position string
+  let lx=marginPx, ly=marginPx;
+  if(s.pos==='top-left')     {lx=marginPx;           ly=marginPx;}
+  else if(s.pos==='top-center')  {lx=(outW-logoW)/2;     ly=marginPx;}
+  else if(s.pos==='top-right')   {lx=outW-logoW-marginPx;ly=marginPx;}
+  else if(s.pos==='mid-left')    {lx=marginPx;           ly=(outH-logoH)/2;}
+  else if(s.pos==='center')      {lx=(outW-logoW)/2;     ly=(outH-logoH)/2;}
+  else if(s.pos==='mid-right')   {lx=outW-logoW-marginPx;ly=(outH-logoH)/2;}
+  else if(s.pos==='bot-left')    {lx=marginPx;           ly=outH-logoH-marginPx;}
+  else if(s.pos==='bot-center')  {lx=(outW-logoW)/2;     ly=outH-logoH-marginPx;}
+  else if(s.pos==='bot-right')   {lx=outW-logoW-marginPx;ly=outH-logoH-marginPx;}
+
+  ctx.save();
+  ctx.globalAlpha=s.opacity;
+
+  if(s.shape==='circle'){
+    // White circle background if enabled
+    if(s.bgCircle){
+      ctx.beginPath();
+      ctx.arc(lx+logoW/2, ly+logoH/2, logoW/2+4, 0, Math.PI*2);
+      ctx.fillStyle='white';
+      ctx.fill();
+    }
+    // Clip to circle
+    ctx.beginPath();
+    ctx.arc(lx+logoW/2, ly+logoH/2, logoW/2, 0, Math.PI*2);
+    ctx.clip();
+    ctx.drawImage(logoImg, lx, ly, logoW, logoH);
+  } else if(s.shape==='square'){
+    if(s.bgCircle){
+      ctx.fillStyle='white';
+      ctx.beginPath();
+      ctx.roundRect(lx-4, ly-4, logoW+8, logoH+8, 8);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.roundRect(lx, ly, logoW, logoH, 6);
+    ctx.clip();
+    ctx.drawImage(logoImg, lx, ly, logoW, logoH);
+  } else {
+    // Original — no clip
+    if(s.bgCircle){
+      ctx.fillStyle='rgba(255,255,255,0.85)';
+      ctx.beginPath();
+      ctx.roundRect(lx-4, ly-4, logoW+8, logoH+8, 8);
+      ctx.fill();
+    }
+    ctx.drawImage(logoImg, lx, ly, logoW, logoH);
+  }
+  ctx.restore();
+}
+
+function updateLogoPreview(){
+  if(!$('logoEnabled').checked) return;
+  const cvs=$('logoCanvas');
+  const {w,h}=getRatioDims(currentRatio);
+  cvs.width=w; cvs.height=h;
+  const ctx=cvs.getContext('2d');
+
+  // Draw background
+  if(bgType==='solid'){
+    ctx.fillStyle=$('solidColor').value;
+    ctx.fillRect(0,0,w,h);
+  } else if(bgType==='gradient'){
+    const c1=$('grad1').value, c2=$('grad2').value;
+    let grd;
+    if(gradDir==='to bottom') grd=ctx.createLinearGradient(0,0,0,h);
+    else if(gradDir==='to right') grd=ctx.createLinearGradient(0,0,w,0);
+    else if(gradDir==='to bottom right') grd=ctx.createLinearGradient(0,0,w,h);
+    else grd=ctx.createLinearGradient(w,0,0,h);
+    grd.addColorStop(0,c1); grd.addColorStop(1,c2);
+    ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+  } else {
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,w,h);
+  }
+
+  // Draw video placeholder
+  const vw=w*0.85, vh=vw*(9/16);
+  const vx=(w-vw)/2, vy=(h-vh)/2;
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(vx,vy,vw,vh);
+  ctx.strokeStyle='rgba(168,85,247,0.5)'; ctx.lineWidth=1; ctx.strokeRect(vx,vy,vw,vh);
+
+  if(!logoImageData) return;
+  const s=getLogoSettings();
+  const img=new Image();
+  img.onload=()=>{
+    drawLogoOnCanvas(ctx, w, h, img, s);
+  };
+  img.src=logoImageData;
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+buildPresets();
+buildGradDirs();
+updatePreview();
+updateWmPreview();
+$('solidColor').addEventListener('input',()=>{$('solidHex').textContent=$('solidColor').value;updatePreview();updateWmPreview()});
+$('grad1').addEventListener('input',()=>{updatePreview();updateWmPreview()});
+$('grad2').addEventListener('input',()=>{updatePreview();updateWmPreview()});
+
+// ══════════════════════════════════════════════════════════════════
+// 🦇 BATMAN GOTHAM CITY ANIMATION ENGINE
+// ══════════════════════════════════════════════════════════════════
+let batAnim=null;
+const BAT={
+  cvs:null,ctx:null,W:0,H:0,
+  t:0,
+  // Batman position
+  bx:0,by:0,
+  // Cape wave
+  capePhase:0,
+  // Batarang
+  batarang:{x:0,y:0,angle:0,active:false,vx:0,vy:0},
+  // Enemy
+  enemy:{x:0,y:0,hp:3,hit:false,hitTimer:0,knocked:false},
+  // Lightning
+  lightning:{active:false,timer:0,bolts:[]},
+  // Stars/rain
+  drops:[],
+  // Bat signal
+  signalAngle:0,
+  // Buildings
+  buildings:[],
+  // Particles (impact)
+  particles:[],
+  // Cape segments
+  capeSegs:[],
+  phase:'idle', // idle | fight | throw | hit | win
+  phaseTimer:0,
+};
+
+function batInit(){
+  const cvs=document.getElementById('batCanvas');
+  const scene=document.getElementById('batmanScene');
+  if(!cvs||!scene)return;
+  BAT.cvs=cvs;
+  BAT.ctx=cvs.getContext('2d');
+  BAT.W=scene.offsetWidth||360;
+  BAT.H=200;
+  cvs.width=BAT.W;cvs.height=BAT.H;
+
+  const W=BAT.W,H=BAT.H;
+
+  // Batman starts left-center on a rooftop
+  BAT.bx=W*0.22; BAT.by=H*0.58;
+
+  // Enemy starts right side
+  BAT.enemy={x:W*0.78,y:H*0.58,hp:3,hit:false,hitTimer:0,knocked:false};
+
+  // Batarang reset
+  BAT.batarang={x:BAT.bx,y:BAT.by-8,angle:0,active:false,vx:0,vy:0};
+
+  // Buildings — Gotham skyline
+  BAT.buildings=[];
+  const bldgs=[
+    {x:0,   w:40, h:H*0.45, win:[[5,H*0.1],[5,H*0.2],[5,H*0.3],[18,H*0.1],[18,H*0.2]]},
+    {x:38,  w:28, h:H*0.6,  win:[[5,H*0.05],[5,H*0.18],[16,H*0.05],[16,H*0.18],[5,H*0.32],[16,H*0.32]]},
+    {x:64,  w:22, h:H*0.38, win:[[4,H*0.1],[12,H*0.1],[4,H*0.22]]},
+    {x:W-120,w:35,h:H*0.5,  win:[[5,H*0.1],[20,H*0.1],[5,H*0.25],[20,H*0.25],[5,H*0.4]]},
+    {x:W-82, w:25,h:H*0.65, win:[[5,H*0.05],[14,H*0.05],[5,H*0.2],[14,H*0.2],[5,H*0.35],[14,H*0.35]]},
+    {x:W-55, w:30,h:H*0.42, win:[[5,H*0.08],[18,H*0.08],[5,H*0.22],[18,H*0.22]]},
+    {x:W-23, w:23,h:H*0.55, win:[[4,H*0.1],[14,H*0.1],[4,H*0.25]]},
+  ];
+  BAT.buildings=bldgs;
+
+  // Rain drops
+  BAT.drops=Array.from({length:55},()=>({
+    x:Math.random()*W, y:Math.random()*H,
+    len:Math.random()*10+5,
+    speed:Math.random()*3+2,
+    alpha:Math.random()*0.35+0.1,
+  }));
+
+  // Cape segments (5 segments)
+  BAT.capeSegs=Array.from({length:6},(_,i)=>({ox:0,oy:i*4,wave:Math.random()*Math.PI*2}));
+
+  BAT.particles=[];
+  BAT.t=0;
+  BAT.phase='idle';
+  BAT.phaseTimer=0;
+  BAT.lightning={active:false,timer:0,bolts:[]};
+  BAT.signalAngle=0;
+}
+
+function batFrame(){
+  if(!BAT.cvs)return;
+  const {ctx,W,H}=BAT;
+  BAT.t++;
+  BAT.capePhase+=0.08;
+  BAT.signalAngle+=0.01;
+
+  // ── Phase controller ──
+  BAT.phaseTimer++;
+  if(BAT.phase==='idle'&&BAT.phaseTimer>70){
+    BAT.phase='approach';BAT.phaseTimer=0;
+  }
+  if(BAT.phase==='approach'){
+    // Batman walks toward enemy
+    if(BAT.bx<W*0.38) BAT.bx+=1.2;
+    else{BAT.phase='throw';BAT.phaseTimer=0;
+      // Launch batarang
+      BAT.batarang.active=true;
+      BAT.batarang.x=BAT.bx+10;
+      BAT.batarang.y=BAT.by-10;
+      BAT.batarang.vx=4.5;
+      BAT.batarang.vy=-0.8;
+    }
+  }
+  if(BAT.phase==='throw'){
+    if(BAT.batarang.active){
+      BAT.batarang.x+=BAT.batarang.vx;
+      BAT.batarang.y+=BAT.batarang.vy;
+      BAT.batarang.angle+=0.25;
+      BAT.batarang.vy+=0.06;
+      // Hit enemy?
+      if(BAT.batarang.x>BAT.enemy.x-15&&BAT.enemy.hp>0){
+        BAT.batarang.active=false;
+        BAT.enemy.hp--;
+        BAT.enemy.hit=true;
+        BAT.enemy.hitTimer=18;
+        spawnParticles(BAT.enemy.x,BAT.enemy.y,12,'#ffd700');
+        triggerLightning();
+        if(BAT.enemy.hp<=0){
+          BAT.enemy.knocked=true;
+          BAT.phase='win';BAT.phaseTimer=0;
+        } else {
+          BAT.phase='punch';BAT.phaseTimer=0;
+        }
+      }
+    } else{BAT.phase='punch';BAT.phaseTimer=0;}
+  }
+  if(BAT.phase==='punch'){
+    if(BAT.bx<W*0.55) BAT.bx+=1.8;
+    if(BAT.phaseTimer>30){
+      BAT.enemy.hit=true;BAT.enemy.hitTimer=18;
+      BAT.enemy.hp=Math.max(0,BAT.enemy.hp-1);
+      spawnParticles(BAT.enemy.x,BAT.enemy.y-10,16,'#ff6600');
+      triggerLightning();
+      if(BAT.enemy.hp<=0){BAT.enemy.knocked=true;BAT.phase='win';BAT.phaseTimer=0;}
+      else{BAT.phase='retreat';BAT.phaseTimer=0;}
+    }
+  }
+  if(BAT.phase==='retreat'){
+    if(BAT.bx>W*0.22) BAT.bx-=1.5;
+    if(BAT.phaseTimer>55){
+      BAT.phase='throw';BAT.phaseTimer=0;
+      BAT.batarang.active=true;
+      BAT.batarang.x=BAT.bx+10;
+      BAT.batarang.y=BAT.by-10;
+      BAT.batarang.vx=5;BAT.batarang.vy=-1;
+    }
+  }
+  if(BAT.phase==='win'&&BAT.phaseTimer>120){
+    // Loop — enemy respawns
+    BAT.enemy={x:W*0.78,y:H*0.58,hp:3,hit:false,hitTimer:0,knocked:false};
+    BAT.bx=W*0.22;
+    BAT.phase='idle';BAT.phaseTimer=0;
+  }
+
+  // Enemy hit timer
+  if(BAT.enemy.hitTimer>0) BAT.enemy.hitTimer--;
+  else BAT.enemy.hit=false;
+
+  // Lightning timer
+  if(BAT.lightning.active){
+    BAT.lightning.timer--;
+    if(BAT.lightning.timer<=0) BAT.lightning.active=false;
+  }
+
+  // Rain update
+  BAT.drops.forEach(d=>{d.y+=d.speed;if(d.y>H){d.y=0;d.x=Math.random()*W;}});
+
+  // Particles update
+  BAT.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life--;p.alpha*=0.88;});
+  BAT.particles=BAT.particles.filter(p=>p.life>0);
+
+  // ── DRAW ──
+  // Sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#06020f');sky.addColorStop(0.5,'#12052a');sky.addColorStop(1,'#1a0a05');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+
+  // Stars
+  ctx.fillStyle='rgba(255,255,255,0.7)';
+  for(let i=0;i<30;i++){
+    const sx=(i*137.5)%W,sy=(i*61.8)%(H*0.5);
+    const twinkle=0.4+0.6*Math.abs(Math.sin(BAT.t*0.04+i));
+    ctx.globalAlpha=twinkle*0.7;
+    ctx.fillRect(sx,sy,1,1);
+  }
+  ctx.globalAlpha=1;
+
+  // Bat Signal — spotlight
+  drawBatSignal(ctx,W,H);
+
+  // Rain
+  ctx.strokeStyle='rgba(150,180,255,0.22)';ctx.lineWidth=1;
+  BAT.drops.forEach(d=>{
+    ctx.globalAlpha=d.alpha;
+    ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-1,d.y+d.len);ctx.stroke();
+  });
+  ctx.globalAlpha=1;
+
+  // Lightning flash
+  if(BAT.lightning.active){
+    ctx.fillStyle=`rgba(200,200,255,${BAT.lightning.timer/10*0.18})`;
+    ctx.fillRect(0,0,W,H);
+    BAT.lightning.bolts.forEach(bolt=>drawLightningBolt(ctx,bolt));
+  }
+
+  // Buildings (behind characters)
+  drawBuildings(ctx,W,H);
+
+  // Rooftop where they stand
+  ctx.fillStyle='#1a0d2e';
+  ctx.fillRect(W*0.08,H*0.62,W*0.84,H*0.38);
+  ctx.fillStyle='rgba(168,85,247,0.3)';
+  ctx.fillRect(W*0.08,H*0.62,W*0.84,3);
+
+  // ── Enemy (goon) ──
+  drawEnemy(ctx,BAT.enemy,H);
+
+  // ── Batman ──
+  drawBatman(ctx,BAT.bx,BAT.by,H);
+
+  // ── Batarang ──
+  if(BAT.batarang.active){
+    ctx.save();
+    ctx.translate(BAT.batarang.x,BAT.batarang.y);
+    ctx.rotate(BAT.batarang.angle);
+    drawBatarang(ctx);
+    ctx.restore();
+  }
+
+  // ── Particles ──
+  BAT.particles.forEach(p=>{
+    ctx.save();ctx.globalAlpha=p.alpha;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  });
+
+  // ── KAPOW / POW text on hit ──
+  if(BAT.enemy.hit&&BAT.enemy.hitTimer>10){
+    drawKapow(ctx,BAT.enemy.x-10,BAT.enemy.y-28,BAT.enemy.hitTimer);
+  }
+
+  // ── WIN text ──
+  if(BAT.phase==='win'&&BAT.phaseTimer<60){
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,BAT.phaseTimer/15);
+    ctx.font=`bold ${Math.round(H*0.14)}px Arial Black,Arial`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#ffd700';
+    ctx.shadowColor='#ffd700';ctx.shadowBlur=22;
+    ctx.fillText('💥 GOTHAM SAFE!',W/2,H*0.38);
+    ctx.restore();
+  }
+
+  // "ENCODING..." overlay at bottom
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.fillRect(0,H-22,W,22);
+  ctx.font=`bold ${Math.round(H*0.075)}px 'Orbitron',monospace`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#ffd700';
+  ctx.shadowColor='#ffd700';ctx.shadowBlur=8;
+  const dots='.'.repeat((Math.floor(BAT.t/14)%4));
+  ctx.fillText(`🦇  ENCODING${dots}`,W/2,H-11);
+  ctx.restore();
+}
+
+function drawBatSignal(ctx,W,H){
+  // Spotlight beam
+  ctx.save();
+  const cx=W*0.65,cy=H*0.08;
+  const beamAng=Math.sin(BAT.signalAngle)*0.15;
+  const grd=ctx.createConicalGradient?null:null;
+  // Beam polygon
+  const bw=22;
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.lineTo(cx-bw+Math.sin(beamAng)*30,H*0.62);
+  ctx.lineTo(cx+bw+Math.sin(beamAng)*30,H*0.62);
+  ctx.closePath();
+  const grad=ctx.createLinearGradient(cx,cy,cx,H*0.62);
+  grad.addColorStop(0,'rgba(255,255,200,0.28)');
+  grad.addColorStop(1,'rgba(255,255,200,0.03)');
+  ctx.fillStyle=grad;
+  ctx.fill();
+  // Bat symbol in signal
+  ctx.save();
+  ctx.translate(cx+Math.sin(beamAng)*15,H*0.56);
+  ctx.globalAlpha=0.55+0.3*Math.sin(BAT.t*0.04);
+  drawBatSymbol(ctx,16);
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawBatSymbol(ctx,size){
+  ctx.fillStyle='rgba(0,0,0,0.85)';
+  ctx.beginPath();
+  // Simple bat outline
+  ctx.ellipse(0,0,size,size*0.45,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle='rgba(255,220,0,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(0,0,size*0.85,size*0.35,0,0,Math.PI*2);
+  ctx.fill();
+  // Wings
+  ctx.fillStyle='rgba(0,0,0,0.85)';
+  [-1,1].forEach(side=>{
+    ctx.beginPath();
+    ctx.moveTo(0,-size*0.1);
+    ctx.lineTo(side*size*1.4,-size*0.5);
+    ctx.lineTo(side*size*1.1,size*0.15);
+    ctx.lineTo(side*size*0.5,-size*0.05);
+    ctx.closePath();ctx.fill();
+  });
+}
+
+function drawBuildings(ctx,W,H){
+  BAT.buildings.forEach(b=>{
+    // Building body
+    const grad=ctx.createLinearGradient(b.x,H-b.h,b.x+b.w,H);
+    grad.addColorStop(0,'#1a0d2e');grad.addColorStop(1,'#0d0618');
+    ctx.fillStyle=grad;
+    ctx.fillRect(b.x,H-b.h,b.w,b.h);
+    // Windows
+    b.win.forEach(([wx,wy])=>{
+      const on=Math.sin(BAT.t*0.03+(b.x+wx)*0.5)>0.1;
+      ctx.fillStyle=on?`rgba(255,230,100,${0.4+0.35*Math.sin(BAT.t*0.05+wx)})`:'rgba(30,15,50,0.8)';
+      ctx.fillRect(b.x+wx,H-b.h+wy,5,7);
+    });
+    // Roof edge highlight
+    ctx.fillStyle='rgba(168,85,247,0.25)';
+    ctx.fillRect(b.x,H-b.h,b.w,1.5);
+  });
+}
+
+function drawBatman(ctx,x,y,H){
+  ctx.save();
+  const t=BAT.t;
+  // Bob animation
+  const bob=Math.sin(t*0.12)*1.8;
+  y+=bob;
+
+  // Cape — flowing segments
+  ctx.fillStyle='#1a0530';
+  const capeW=26,capeH=36;
+  for(let i=0;i<5;i++){
+    const wave=Math.sin(t*0.12+i*0.5)*5;
+    const alpha=1-i*0.12;
+    ctx.globalAlpha=alpha*0.9;
+    ctx.beginPath();
+    ctx.moveTo(x-capeW/2+i*1.5,y-12);
+    ctx.quadraticCurveTo(x-capeW+wave-i*3,y+capeH-i*4,x,y+capeH-i*3+wave*0.5);
+    ctx.quadraticCurveTo(x+capeW-wave+i*3,y+capeH-i*4,x+capeW/2-i*1.5,y-12);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // Body — dark suit
+  ctx.fillStyle='#1a1a2e';
+  ctx.beginPath();
+  ctx.ellipse(x,y,10,14,0,0,Math.PI*2);
+  ctx.fill();
+
+  // Bat chest symbol
+  ctx.fillStyle='#ffd700';
+  ctx.beginPath();
+  ctx.ellipse(x,y+2,5,3,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle='#1a1a2e';
+  [-1,1].forEach(s=>{
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x+s*8,y-5);
+    ctx.lineTo(x+s*6,y+2);
+    ctx.lineTo(x+s*2,y+1);
+    ctx.closePath();ctx.fill();
+  });
+
+  // Legs
+  ctx.fillStyle='#111';
+  const kick=BAT.phase==='punch'?Math.sin(t*0.3)*8:0;
+  ctx.fillRect(x-7,y+12,5,12+kick);
+  ctx.fillRect(x+2,y+12,5,12-kick*0.5);
+
+  // Arms
+  const armSwing=Math.sin(t*0.12)*6+(BAT.phase==='punch'?12:0);
+  ctx.fillStyle='#222';
+  ctx.beginPath();
+  ctx.moveTo(x-8,y-4);ctx.lineTo(x-16+armSwing,y+6);ctx.lineTo(x-13+armSwing,y+10);ctx.lineTo(x-5,y+2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x+8,y-4);ctx.lineTo(x+16-armSwing,y+6);ctx.lineTo(x+13-armSwing,y+10);ctx.lineTo(x+5,y+2);
+  ctx.fill();
+
+  // Head + cowl
+  ctx.fillStyle='#1a1a2e';
+  ctx.beginPath();ctx.ellipse(x,y-16,8,9,0,0,Math.PI*2);ctx.fill();
+  // Bat ears
+  ctx.fillStyle='#111';
+  [[-1,1],[1,1]].forEach(([sx])=>{
+    ctx.beginPath();
+    ctx.moveTo(x+sx*3,y-22);
+    ctx.lineTo(x+sx*7,y-30);
+    ctx.lineTo(x+sx*6,y-21);
+    ctx.closePath();ctx.fill();
+  });
+  // Eyes glow
+  ctx.fillStyle='#ffffff';
+  ctx.shadowColor='#88aaff';ctx.shadowBlur=6;
+  ctx.fillRect(x-5,y-18,3,2);
+  ctx.fillRect(x+2,y-18,3,2);
+  ctx.shadowBlur=0;
+
+  ctx.restore();
+}
+
+function drawEnemy(ctx,e,H){
+  if(e.knocked){
+    // Enemy knocked — lying down
+    ctx.save();
+    ctx.translate(e.x,e.y+14);ctx.rotate(Math.PI/2);
+    drawGoonBody(ctx,0,0,e);
+    ctx.restore();
+    // Stars above
+    for(let i=0;i<3;i++){
+      const ang=BAT.t*0.1+i*(Math.PI*2/3);
+      ctx.fillStyle='#ffd700';
+      ctx.font='10px Arial';
+      ctx.fillText('★',e.x-8+Math.cos(ang)*12,e.y-10+Math.sin(ang)*5);
+    }
+    return;
+  }
+  const shake=e.hit?Math.sin(e.hitTimer*1.5)*5:0;
+  ctx.save();ctx.translate(shake,0);
+  drawGoonBody(ctx,e.x,e.y,e);
+  ctx.restore();
+}
+
+function drawGoonBody(ctx,x,y,e){
+  const red=e.hit?1:0;
+  // Body
+  ctx.fillStyle=`rgb(${80+red*120},${40},${60})`;
+  ctx.fillRect(x-9,y-12,18,24);
+  // Head
+  ctx.fillStyle=`rgb(${200+red*55},${160-red*40},${130-red*40})`;
+  ctx.beginPath();ctx.ellipse(x,y-18,8,9,0,0,Math.PI*2);ctx.fill();
+  // Eyes (angry)
+  ctx.fillStyle='#fff';ctx.fillRect(x-5,y-20,4,3);ctx.fillRect(x+1,y-20,4,3);
+  ctx.fillStyle='#ff0000';ctx.fillRect(x-4,y-20,2,2);ctx.fillRect(x+2,y-20,2,2);
+  // HP bar
+  const hpW=24;
+  ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(x-hpW/2,y-30,hpW,4);
+  ctx.fillStyle=e.hp===3?'#34d399':e.hp===2?'#fbbf24':'#f87171';
+  ctx.fillRect(x-hpW/2,y-30,(hpW*(e.hp/3)),4);
+  // Arms
+  ctx.fillStyle='#500030';
+  ctx.fillRect(x-16,y-10,7,14);
+  ctx.fillRect(x+9,y-10,7,14);
+  // Legs
+  ctx.fillStyle='#333';
+  ctx.fillRect(x-7,y+12,6,13);ctx.fillRect(x+1,y+12,6,13);
+}
+
+function drawBatarang(ctx){
+  ctx.fillStyle='#aaa';
+  ctx.shadowColor='#ffd700';ctx.shadowBlur=8;
+  [-1,1].forEach(s=>{
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(s*14,-5);
+    ctx.lineTo(s*10,4);
+    ctx.closePath();ctx.fill();
+  });
+  ctx.shadowBlur=0;
+}
+
+function drawKapow(ctx,x,y,timer){
+  const words=['POW!','BAM!','ZAP!','KA-POW!'];
+  const word=words[Math.floor(BAT.t/15)%words.length];
+  const scale=1+Math.sin(timer*0.3)*0.15;
+  ctx.save();
+  ctx.translate(x,y);ctx.scale(scale,scale);
+  ctx.font=`bold ${Math.round(12+timer*0.4)}px Arial Black,Arial`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  // Star burst
+  ctx.fillStyle='#ffd700';
+  ctx.shadowColor='#ff6600';ctx.shadowBlur=14;
+  for(let i=0;i<8;i++){
+    const a=i*Math.PI/4;const r=22+Math.sin(i)*5;
+    ctx.beginPath();ctx.arc(Math.cos(a)*r,Math.sin(a)*r,5,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle='#ff6600';ctx.fillText(word,0,0);
+  ctx.fillStyle='#fff';
+  ctx.font=`bold ${Math.round(10+timer*0.3)}px Arial Black,Arial`;
+  ctx.fillText(word,0,0);
+  ctx.restore();
+}
+
+function triggerLightning(){
+  BAT.lightning.active=true;
+  BAT.lightning.timer=12;
+  BAT.lightning.bolts=Array.from({length:3},()=>({
+    x:Math.random()*BAT.W,
+    segs:Array.from({length:8},(_,i)=>({
+      x:(Math.random()-0.5)*30,
+      y:i*(BAT.H*0.08),
+    })),
+  }));
+}
+
+function drawLightningBolt(ctx,bolt){
+  ctx.save();
+  ctx.strokeStyle='rgba(180,200,255,0.9)';ctx.lineWidth=1.5;
+  ctx.shadowColor='#aaccff';ctx.shadowBlur=10;
+  ctx.beginPath();
+  ctx.moveTo(bolt.x,0);
+  bolt.segs.forEach(s=>ctx.lineTo(bolt.x+s.x,s.y));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function spawnParticles(x,y,count,color){
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2;const spd=Math.random()*4+1;
+    BAT.particles.push({
+      x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,
+      r:Math.random()*3+1,life:Math.random()*20+12,alpha:1,color
+    });
+  }
+}
+
+function batStart(){
+  const scene=document.getElementById('batmanScene');
+  const status=document.getElementById('batStatus');
+  if(!scene||!status)return;
+  scene.classList.add('show');
+  status.classList.add('show');
+  batInit();
+  if(batAnim)cancelAnimationFrame(batAnim);
+  function loop(){batFrame();batAnim=requestAnimationFrame(loop);}
+  loop();
+}
+
+function batStop(){
+  if(batAnim){cancelAnimationFrame(batAnim);batAnim=null;}
+  const scene=document.getElementById('batmanScene');
+  const status=document.getElementById('batStatus');
+  if(scene)scene.classList.remove('show');
+  if(status)status.classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 💻 HACKER TERMINAL ANIMATION
+// ══════════════════════════════════════════════════════════════════
+let hackTimer=null;
+let hackLineIdx=0,hackCharIdx=0,hackCurrentLine=null;
+
+const HACK_LINES=[
+  {t:'<span class="term-prompt">root@kali</span>:<span class="term-path">~</span># ',c:'nmap -sS -p- 192.168.1.1',d:28},
+  {t:'',c:'<span class="term-out">Starting Nmap 7.94 ( https://nmap.org )</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-out">Nmap scan report for target.local (192.168.1.1)</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-info">PORT     STATE  SERVICE</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-ok">22/tcp   open   ssh</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-ok">80/tcp   open   http</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-ok">443/tcp  open   https</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-warn">3306/tcp open   mysql  [VULNERABLE]</span>',d:8,instant:true},
+  {t:'<span class="term-prompt">root@kali</span>:<span class="term-path">~</span># ',c:'./exploit.sh --target 192.168.1.1 --port 22',d:30},
+  {t:'',c:'<span class="term-info">[*] Initializing payload generator...</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-info">[*] Generating reverse shell on 0x4a8f...</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-info">[*] Encoding shellcode: x86_64-linux</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-ok">[+] Payload size: 2048 bytes — encoded</span>',d:8,instant:true},
+  {t:'<span class="term-prompt">root@kali</span>:<span class="term-path">~</span># ',c:'msfconsole -q -x "use exploit/multi/handler"',d:25},
+  {t:'',c:'<span class="term-info">[*] Started reverse TCP handler on 0.0.0.0:4444</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-warn">[*] Sending stage (1182936 bytes) to 192.168.1.1</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-ok">[+] Meterpreter session 1 opened (192.168.1.10:4444)</span>',d:8,instant:true},
+  {t:'<span class="term-prompt" style="color:#10b981">meterpreter</span> &gt; ',c:'sysinfo',d:30},
+  {t:'',c:'<span class="term-out">Computer    : DESKTOP-7K3N9P2</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-out">OS          : Linux 5.15.0-78-generic x86_64</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-hl">Domain      : CARTOONKIDUNIYA</span>',d:8,instant:true},
+  {t:'<span class="term-prompt" style="color:#10b981">meterpreter</span> &gt; ',c:'hashdump',d:25},
+  {t:'',c:'<span class="term-out">Administrator:500:aad3b435b51404ee:31d6cfe0d16...</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-warn">[!] 4 password hashes extracted</span>',d:8,instant:true},
+  {t:'<span class="term-prompt">root@kali</span>:<span class="term-path">~/loot</span># ',c:'john --wordlist=rockyou.txt shadow',d:25},
+  {t:'',c:'<span class="term-info">Loaded 4 password hashes with 4 different salts</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-warn">Cracking... [████████████░░░░░░] 67%</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-ok">password123      (admin)</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-hl">[+] 2/4 passwords cracked!</span>',d:8,instant:true},
+  {t:'<span class="term-prompt" style="color:#ef4444">root@target</span>:<span class="term-path">~</span># ',c:'cat /root/flag.txt',d:30},
+  {t:'',c:'<span class="term-hl">FLAG{sys73m_pwn3d_succ3ssfully_2024}</span>',d:10,instant:true},
+  {t:'',c:'<span class="term-ok">[✓] ACCESS GRANTED — ROOT SHELL ACQUIRED</span>',d:8,instant:true},
+  {t:'',c:'<span class="term-info">[*] Cleaning logs... traces cleared.</span>',d:8,instant:true},
+  {t:'<span class="term-prompt">root@kali</span>:<span class="term-path">~</span># ',c:'clear && echo "Mission Accomplished"',d:25,clearAfter:true},
+];
+
+const MAX_TERM_LINES=13;
+
+function hackAddLine(html){
+  const tb=document.getElementById('termBody');if(!tb)return;
+  const div=document.createElement('div');div.className='term-line';div.innerHTML=html;
+  tb.appendChild(div);
+  while(tb.children.length>MAX_TERM_LINES)tb.removeChild(tb.firstChild);
+}
+
+function hackNext(){
+  const tb=document.getElementById('termBody');if(!tb)return;
+  if(hackLineIdx>=HACK_LINES.length){
+    hackLineIdx=0;
+    hackTimer=setTimeout(()=>{tb.innerHTML='';hackNext();},1500);
+    return;
+  }
+  const item=HACK_LINES[hackLineIdx];
+  if(item.clearAfter){
+    hackAddLine(item.t+'<span class="term-cmd">'+item.c+'</span>');
+    hackLineIdx++;
+    hackTimer=setTimeout(()=>{tb.innerHTML='';hackNext();},800);
+    return;
+  }
+  if(item.instant){
+    hackAddLine(item.c);hackLineIdx++;
+    hackTimer=setTimeout(hackNext,55+Math.random()*75);
+    return;
+  }
+  hackCurrentLine=document.createElement('div');
+  hackCurrentLine.className='term-line';
+  hackCurrentLine.innerHTML=item.t+'<span class="term-cmd"></span><span class="hk-cursor"></span>';
+  tb.appendChild(hackCurrentLine);
+  while(tb.children.length>MAX_TERM_LINES)tb.removeChild(tb.firstChild);
+  hackCharIdx=0;
+  hackTypeChar(item);
+}
+
+function hackTypeChar(item){
+  const span=hackCurrentLine?hackCurrentLine.querySelector('.term-cmd'):null;if(!span)return;
+  if(hackCharIdx<item.c.length){
+    span.textContent=item.c.substring(0,hackCharIdx+1);hackCharIdx++;
+    hackTimer=setTimeout(()=>hackTypeChar(item),item.d+Math.random()*28-10);
+  } else {
+    const cur=hackCurrentLine.querySelector('.hk-cursor');if(cur)cur.remove();
+    hackLineIdx++;
+    hackTimer=setTimeout(hackNext,180+Math.random()*180);
+  }
+}
+
+function hackStart(){
+  const stage=document.getElementById('termStage');
+  const status=document.getElementById('termStatus');
+  const tb=document.getElementById('termBody');
+  if(!stage)return;
+  stage.classList.add('show');
+  if(status)status.classList.add('show');
+  if(tb)tb.innerHTML='';
+  hackLineIdx=0;hackCharIdx=0;
+  clearTimeout(hackTimer);
+  hackNext();
+}
+
+function hackStop(){
+  clearTimeout(hackTimer);hackTimer=null;
+  const stage=document.getElementById('termStage');
+  const status=document.getElementById('termStatus');
+  if(stage)stage.classList.remove('show');
+  if(status)status.classList.remove('show');
+}
+
+// ── Active animation tracker ──────────────────────────────────────
+let activeAnim='bat'; // 'bat' or 'hack'
+
+function switchAnim(type,el){
+  document.querySelectorAll('.anim-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activeAnim=type;
+  if(type==='bat'){
+    hackStop();
+    // Only start Batman if processing is ongoing
+    if(document.getElementById('procWrap').classList.contains('show')){
+      batStart();
+    }
+  } else {
+    batStop();
+    if(document.getElementById('procWrap').classList.contains('show')){
+      hackStart();
+    }
+  }
+}
+
+// Batman only — hacker disabled
+window._animStart=function(){ batStart(); };
+window._animStop=function(){ batStop(); hackStop(); };
+</script>
+</body>
+</html>
