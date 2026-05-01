@@ -3,12 +3,11 @@ name: Build APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # Manual trigger button bhi hoga GitHub pe
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,6 +21,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Download Gradle Wrapper JAR
+        run: |
+          mkdir -p gradle/wrapper
+          curl -L "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o gradle/wrapper/gradle-wrapper.jar
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
@@ -34,9 +39,3 @@ jobs:
           name: CartoonKiDuniya-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Show APK size
-        run: |
-          echo "✅ APK Build Complete!"
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
-          
